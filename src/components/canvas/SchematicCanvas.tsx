@@ -8,6 +8,7 @@ import {
   type Connection,
   type Node,
 } from '@xyflow/react';
+import { Plus } from 'lucide-react';
 import { useSchematicStore } from '../../store/schematicStore';
 import type { AppEdge, AppNode } from '../../types/electrical';
 import { PowerSourceNode } from '../nodes/PowerSourceNode';
@@ -17,7 +18,11 @@ import { LoadNode } from '../nodes/LoadNode';
 import { JunctionNode } from '../nodes/JunctionNode';
 import { ElectricalEdge } from '../edges/ElectricalEdge';
 
-export const SchematicCanvas: React.FC = () => {
+interface SchematicCanvasProps {
+  onOpenPalette?: () => void;
+}
+
+export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({ onOpenPalette }) => {
   const nodes = useSchematicStore((s) => s.nodes);
   const edges = useSchematicStore((s) => s.edges);
   const onNodesChange = useSchematicStore((s) => s.onNodesChange);
@@ -65,6 +70,16 @@ export const SchematicCanvas: React.FC = () => {
 
   return (
     <div className="flex-1 w-full h-full relative bg-slate-950">
+      {onOpenPalette && (
+        <button
+          onClick={onOpenPalette}
+          className="md:hidden absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/90 active:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/60 backdrop-blur-xs transition cursor-pointer active:scale-95"
+        >
+          <Plus className="w-4 h-4 stroke-[3]" />
+          <span>Añadir Elemento</span>
+        </button>
+      )}
+
       <ReactFlow<AppNode, AppEdge>
         nodes={nodes}
         edges={edges}

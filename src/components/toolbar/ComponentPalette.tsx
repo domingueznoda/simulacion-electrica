@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Zap,
   Shield,
@@ -12,8 +12,14 @@ import {
   Layers,
   CircleDot,
   Plus,
+  X,
+  RotateCw,
+  ChevronLeft,
+  ChevronRight,
+  Search,
 } from 'lucide-react';
 import { useSchematicStore } from '../../store/schematicStore';
+import { PRESET_CIRCUITS } from '../../engine/presets';
 import type { ComponentType } from '../../types/electrical';
 
 interface PaletteItem {
@@ -130,115 +136,207 @@ const PALETTE_ITEMS: PaletteItem[] = [
   },
 ];
 
-export const ComponentPalette: React.FC = () => {
+interface ComponentPaletteProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isDesktopCollapsed?: boolean;
+  onToggleDesktopCollapse?: () => void;
+}
+
+export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
+  isOpen,
+  onClose,
+  isDesktopCollapsed = false,
+  onToggleDesktopCollapse,
+}) => {
   const addNode = useSchematicStore((s) => s.addNode);
+  const activePreset = useSchematicStore((s) => s.activePreset);
+  const loadPreset = useSchematicStore((s) => s.loadPreset);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredItems = PALETTE_ITEMS.filter((item) => {
+    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleAddItem = (type: ComponentType, subType?: string) => {
+    addNode(type, subType);
+  };
 
   return (
-    <aside className="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col h-full overflow-hidden select-none z-20">
-      <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-          Paleta de Elementos
-        </span>
-        <span className="text-[10px] text-slate-400 font-mono">Haz clic para añadir</span>
-      </div>
+    <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-            Alimentación & Distribución
+      <aside
+        className={`fixed md:relative inset-y-0 left-0 z-50 md:z-20 bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none shadow-2xl md:shadow-none transition-all duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${
+          isDesktopCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'w-80 max-w-[85vw] md:w-64'
+        }`}
+      >
+        <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/95">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              Paleta de Elementos
+            </span>
           </div>
-          <div className="space-y-1">
-            {PALETTE_ITEMS.filter((i) => i.category === 'source' || i.category === 'junction').map((item) => (
+
+          <div className="flex items-center gap-1">
+            {onToggleDesktopCollapse && (
               <button
-                key={item.name}
-                onClick={() => addNode(item.type, item.subType)}
-                className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-left transition cursor-pointer group"
+                onClick={onToggleDesktopCollapse}
+                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Plegar panel"
               >
-                <div className="p-1.5 rounded-md bg-slate-900 group-hover:scale-105 transition">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-95"
+              title="Cerrar paleta"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="md:hidden p-3 border-b border-slate-800 bg-slate-950/40 shrink-0">
+          <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1.5">
+            Cargar Circuito Preconfigurado
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={activePreset}
+              onChange={(e) => {
+                loadPreset(e.target.value);
+                onClose();
+              }}
+              className="flex-1 bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-2 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer"
+            >
+              {Object.values(PRESET_CIRCUITS).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                loadPreset(activePreset);
+                onClose();
+              }}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer"
+              title="Restablecer circuito"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-2.5 border-b border-slate-800 bg-slate-900/60 shrink-0 space-y-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar elemento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-950/80 text-xs text-slate-200 placeholder-slate-500 border border-slate-800 rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-hidden focus:border-amber-500/50"
+            />
+          </div>
+
+          <div className="flex gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                selectedCategory === 'all'
+                  ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-800/60'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setSelectedCategory('protection')}
+              className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                selectedCategory === 'protection'
+                  ? 'bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/40'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-800/60'
+              }`}
+            >
+              Protección
+            </button>
+            <button
+              onClick={() => setSelectedCategory('switch')}
+              className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                selectedCategory === 'switch'
+                  ? 'bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/40'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-800/60'
+              }`}
+            >
+              Mandos
+            </button>
+            <button
+              onClick={() => setSelectedCategory('load')}
+              className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                selectedCategory === 'load'
+                  ? 'bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-800/60'
+              }`}
+            >
+              Cargas
+            </button>
+            <button
+              onClick={() => setSelectedCategory('junction')}
+              className={`px-2 py-1 rounded-md transition whitespace-nowrap cursor-pointer ${
+                selectedCategory === 'junction'
+                  ? 'bg-orange-500/20 text-orange-300 font-semibold border border-orange-500/40'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-800/60'
+              }`}
+            >
+              Bornas
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {filteredItems.length === 0 ? (
+            <div className="text-center py-8 text-xs text-slate-500">
+              No se encontraron elementos
+            </div>
+          ) : (
+            filteredItems.map((item) => (
+              <button
+                key={`${item.name}-${item.subType || ''}`}
+                onClick={() => handleAddItem(item.type, item.subType)}
+                className="w-full min-h-[48px] flex items-center gap-3 p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 active:bg-slate-700/80 border border-slate-800 hover:border-slate-700 active:scale-[0.98] text-left transition cursor-pointer group"
+              >
+                <div className="p-2 rounded-lg bg-slate-900 group-hover:scale-110 transition shrink-0">
                   {item.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-slate-200 truncate">{item.name}</div>
                   <div className="text-[10px] text-slate-400 truncate">{item.description}</div>
                 </div>
-                <Plus className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition" />
+                <div className="p-1 rounded-md bg-slate-900/80 text-slate-400 group-hover:text-amber-400 shrink-0">
+                  <Plus className="w-4 h-4" />
+                </div>
               </button>
-            ))}
-          </div>
+            ))
+          )}
         </div>
-
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-            Protecciones (Magnetotérmicos)
-          </div>
-          <div className="space-y-1">
-            {PALETTE_ITEMS.filter((i) => i.category === 'protection').map((item) => (
-              <button
-                key={item.name}
-                onClick={() => addNode(item.type, item.subType)}
-                className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-left transition cursor-pointer group"
-              >
-                <div className="p-1.5 rounded-md bg-slate-900 group-hover:scale-105 transition">
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-200 truncate">{item.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{item.description}</div>
-                </div>
-                <Plus className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-            Mecanismos de Control
-          </div>
-          <div className="space-y-1">
-            {PALETTE_ITEMS.filter((i) => i.category === 'switch').map((item) => (
-              <button
-                key={item.name}
-                onClick={() => addNode(item.type, item.subType)}
-                className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-left transition cursor-pointer group"
-              >
-                <div className="p-1.5 rounded-md bg-slate-900 group-hover:scale-105 transition">
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-200 truncate">{item.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{item.description}</div>
-                </div>
-                <Plus className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
-            Receptores & Cargas
-          </div>
-          <div className="space-y-1">
-            {PALETTE_ITEMS.filter((i) => i.category === 'load').map((item) => (
-              <button
-                key={item.name}
-                onClick={() => addNode(item.type, item.subType)}
-                className="w-full flex items-center gap-2.5 p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-left transition cursor-pointer group"
-              >
-                <div className="p-1.5 rounded-md bg-slate-900 group-hover:scale-105 transition">
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-200 truncate">{item.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{item.description}</div>
-                </div>
-                <Plus className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

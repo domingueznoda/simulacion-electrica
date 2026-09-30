@@ -18,7 +18,9 @@ import type {
 } from '../../types/electrical';
 
 export const DiagnosticsPanel: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
   const [activeTab, setActiveTab] = useState<'diagnostics' | 'inspector'>('diagnostics');
 
   const validationErrors = useSchematicStore((s) => s.validationErrors);
@@ -44,20 +46,25 @@ export const DiagnosticsPanel: React.FC = () => {
     (e) => e.severity === 'warning' || e.severity === 'info'
   );
 
+  const handleTabClick = (tab: 'diagnostics' | 'inspector') => {
+    setActiveTab(tab);
+    if (!isExpanded) setIsExpanded(true);
+  };
+
   return (
     <div className="bg-slate-900 border-t border-slate-800 transition-all select-none z-20">
-      <div className="h-10 px-4 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90">
-        <div className="flex items-center gap-4">
+      <div className="h-10 px-2 sm:px-4 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90">
+        <div className="flex items-center gap-1.5 sm:gap-4 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('diagnostics')}
-            className={`flex items-center gap-1.5 text-xs font-bold transition py-1 px-2 rounded-lg cursor-pointer ${
+            onClick={() => handleTabClick('diagnostics')}
+            className={`flex items-center gap-1.5 text-xs font-bold transition py-1.5 px-2 rounded-lg cursor-pointer ${
               activeTab === 'diagnostics'
                 ? 'bg-slate-800 text-amber-400'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Validación & REBT</span>
+            <Activity className="w-3.5 h-3.5 shrink-0" />
+            <span>Validación <span className="hidden xs:inline">& REBT</span></span>
             {criticalErrors.length > 0 ? (
               <span className="px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold border border-rose-500/40">
                 {criticalErrors.length}
@@ -72,22 +79,22 @@ export const DiagnosticsPanel: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('inspector')}
-            className={`flex items-center gap-1.5 text-xs font-bold transition py-1 px-2 rounded-lg cursor-pointer ${
+            onClick={() => handleTabClick('inspector')}
+            className={`flex items-center gap-1.5 text-xs font-bold transition py-1.5 px-2 rounded-lg cursor-pointer ${
               activeTab === 'inspector'
                 ? 'bg-slate-800 text-amber-400'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>Inspector {selectedNode ? `(${selectedNode.data.name})` : ''}</span>
+            <Sliders className="w-3.5 h-3.5 shrink-0" />
+            <span>Inspector {selectedNode ? <span className="hidden sm:inline">({selectedNode.data.name})</span> : ''}</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden sm:flex items-center gap-3 text-xs font-mono">
             <span className="text-slate-400">
-              Carga Activa: <strong className="text-amber-400 font-bold">{totalWatts} W</strong>
+              Carga: <strong className="text-amber-400 font-bold">{totalWatts} W</strong>
             </span>
             <span className="text-slate-400">
               Intensidad: <strong className="text-emerald-400 font-bold">{totalAmps} A</strong>
@@ -96,7 +103,8 @@ export const DiagnosticsPanel: React.FC = () => {
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white transition cursor-pointer"
+            title={isExpanded ? 'Plegar panel' : 'Desplegar panel'}
           >
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>

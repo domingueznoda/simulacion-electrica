@@ -8,15 +8,28 @@ import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 
 export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
-      <Navbar onOpenHelp={() => setIsHelpOpen(true)} />
+      <Navbar
+        onOpenHelp={() => setIsHelpOpen(true)}
+        onTogglePalette={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
+        isPaletteOpen={isMobilePaletteOpen}
+        isDesktopCollapsed={isDesktopCollapsed}
+        onToggleDesktopCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+      />
 
       <div className="flex flex-1 overflow-hidden relative">
-        <ComponentPalette />
+        <ComponentPalette
+          isOpen={isMobilePaletteOpen}
+          onClose={() => setIsMobilePaletteOpen(false)}
+          isDesktopCollapsed={isDesktopCollapsed}
+          onToggleDesktopCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+        />
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-          <SchematicCanvas />
+          <SchematicCanvas onOpenPalette={() => setIsMobilePaletteOpen(true)} />
           <DiagnosticsPanel />
         </main>
       </div>
