@@ -8,28 +8,24 @@ import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 
 export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
-  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
-      <Navbar
-        onOpenHelp={() => setIsHelpOpen(true)}
-        onTogglePalette={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
-        isPaletteOpen={isMobilePaletteOpen}
-        isDesktopCollapsed={isDesktopCollapsed}
-        onToggleDesktopCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
-      />
+      <Navbar onOpenHelp={() => setIsHelpOpen(true)} />
 
       <div className="flex flex-1 overflow-hidden relative">
         <ComponentPalette
-          isOpen={isMobilePaletteOpen}
-          onClose={() => setIsMobilePaletteOpen(false)}
-          isDesktopCollapsed={isDesktopCollapsed}
-          onToggleDesktopCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+          isOpen={isPaletteOpen}
+          onClose={() => setIsPaletteOpen(false)}
         />
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-          <SchematicCanvas onOpenPalette={() => setIsMobilePaletteOpen(true)} />
+          <SchematicCanvas
+            isPaletteOpen={isPaletteOpen}
+            onOpenPalette={() => setIsPaletteOpen(true)}
+          />
           <DiagnosticsPanel />
         </main>
       </div>

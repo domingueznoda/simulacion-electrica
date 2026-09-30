@@ -12,10 +12,8 @@ import {
   Layers,
   CircleDot,
   Plus,
-  X,
-  RotateCw,
   ChevronLeft,
-  ChevronRight,
+  RotateCw,
   Search,
 } from 'lucide-react';
 import { useSchematicStore } from '../../store/schematicStore';
@@ -139,15 +137,11 @@ const PALETTE_ITEMS: PaletteItem[] = [
 interface ComponentPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  isDesktopCollapsed?: boolean;
-  onToggleDesktopCollapse?: () => void;
 }
 
 export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   isOpen,
   onClose,
-  isDesktopCollapsed = false,
-  onToggleDesktopCollapse,
 }) => {
   const addNode = useSchematicStore((s) => s.addNode);
   const activePreset = useSchematicStore((s) => s.activePreset);
@@ -179,37 +173,23 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
       <aside
         className={`fixed md:relative inset-y-0 left-0 z-50 md:z-20 bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none shadow-2xl md:shadow-none transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        } ${
-          isDesktopCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'w-80 max-w-[85vw] md:w-64'
+          isOpen
+            ? 'translate-x-0 w-80 max-w-[85vw] md:w-64'
+            : '-translate-x-full md:w-0 md:overflow-hidden md:border-r-0'
         }`}
       >
         <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900/95">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-              Paleta de Elementos
-            </span>
-          </div>
+          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Paleta de Elementos
+          </span>
 
-          <div className="flex items-center gap-1">
-            {onToggleDesktopCollapse && (
-              <button
-                onClick={onToggleDesktopCollapse}
-                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-                title="Plegar panel"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-
-            <button
-              onClick={onClose}
-              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-95"
-              title="Cerrar paleta"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-95"
+            title="Cerrar paleta"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="md:hidden p-3 border-b border-slate-800 bg-slate-950/40 shrink-0">

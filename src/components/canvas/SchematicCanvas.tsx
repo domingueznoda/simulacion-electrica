@@ -19,10 +19,14 @@ import { JunctionNode } from '../nodes/JunctionNode';
 import { ElectricalEdge } from '../edges/ElectricalEdge';
 
 interface SchematicCanvasProps {
-  onOpenPalette?: () => void;
+  isPaletteOpen: boolean;
+  onOpenPalette: () => void;
 }
 
-export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({ onOpenPalette }) => {
+export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
+  isPaletteOpen,
+  onOpenPalette,
+}) => {
   const nodes = useSchematicStore((s) => s.nodes);
   const edges = useSchematicStore((s) => s.edges);
   const onNodesChange = useSchematicStore((s) => s.onNodesChange);
@@ -70,10 +74,10 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({ onOpenPalette 
 
   return (
     <div className="flex-1 w-full h-full relative bg-slate-950">
-      {onOpenPalette && (
+      {!isPaletteOpen && (
         <button
           onClick={onOpenPalette}
-          className="md:hidden absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/90 active:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/60 backdrop-blur-xs transition cursor-pointer active:scale-95"
+          className="absolute top-3 left-3 z-10 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/90 hover:bg-amber-500 active:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-950/60 backdrop-blur-xs transition cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Añadir Elemento</span>
