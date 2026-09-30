@@ -119,18 +119,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
           size={1.5}
           color="#334155"
         />
-        <Controls className="!bg-slate-900 !border-slate-700 !text-slate-200 fill-slate-200 rounded-lg shadow-xl" />
-        <MiniMap
-          nodeStrokeWidth={3}
-          nodeColor={(node) => {
-            if (node.type === 'sourceNode') return '#d97706';
-            if (node.type === 'breakerNode') return '#0284c7';
-            if (node.type === 'loadNode') return '#eab308';
-            if (node.type === 'switchNode') return '#8b5cf6';
-            return '#64748b';
-          }}
-          className="!bg-slate-900 !border-slate-800 rounded-xl overflow-hidden shadow-2xl hidden md:block"
-        />
+        <Controls className="!bg-slate-900 !border-slate-700 !text-slate-600 fill-slate-200 rounded-lg shadow-xl" />
       </ReactFlow>
     </div>
   );
