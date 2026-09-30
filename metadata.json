@@ -1,0 +1,6 @@
+{
+  "name": "ElectroSim PWA",
+  "description": "PWA interactiva para diseño, simulación y validación de esquemas eléctricos y circuitos multifilares.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
