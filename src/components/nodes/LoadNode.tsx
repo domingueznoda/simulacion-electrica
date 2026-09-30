@@ -102,7 +102,9 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
 
   const getStatusText = () => {
     if (data.isOn) {
-      return data.loadType === 'buzzer' ? '¡SONANDO (PIII)!' : 'ENCENDIDA';
+      if (data.loadType === 'buzzer') return '¡ZUMBANDO (BZZZZ)!';
+      if (data.isSeries) return `ENCENDIDA (${data.voltageDropVolts || 115}V SERIE)`;
+      return 'ENCENDIDA (230V)';
     }
     if (data.isEnergized) {
       return 'FASE ACTIVA (FALTA NEUTRO)';
@@ -149,8 +151,15 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
 
         <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <div>
-            <div className="text-slate-400">Potencia:</div>
-            <div className="font-mono font-semibold text-slate-200">{data.ratedPowerWatts} W</div>
+            <div className="text-slate-400">Potencia / Tensión:</div>
+            <div className="font-mono font-semibold text-slate-200">
+              {data.ratedPowerWatts} W
+              {data.isOn && (
+                <span className="text-amber-400 font-normal ml-1">
+                  ({data.voltageDropVolts || 230}V)
+                </span>
+              )}
+            </div>
           </div>
           <div>
             <div className="text-slate-400">Consumo:</div>

@@ -81,6 +81,8 @@ export interface LoadComponent extends ElectricalComponent {
   nominalVoltage: number;
   isOn: boolean;
   currentDrawAmps: number;
+  voltageDropVolts?: number;
+  isSeries?: boolean;
 }
 
 export type JunctionType = 'wago_3' | 'wago_5' | 'terminal_strip';
@@ -167,6 +169,7 @@ export interface SchematicStore {
   removeEdge: (id: string) => void;
   updateEdgeData: (id: string, partialData: Partial<CableData>) => void;
   toggleNodeState: (id: string) => void;
+  setNodePressed: (id: string, isPressed: boolean) => void;
   resetBreakers: () => void;
   runSimulation: () => void;
   setSimulating: (active: boolean) => void;

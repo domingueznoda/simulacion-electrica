@@ -508,6 +508,35 @@ export const useSchematicStore = create<SchematicStore>()(
           });
         },
 
+        setNodePressed: (id, isPressed) => {
+          const currentNodes = get().nodes;
+          const targetNode = currentNodes.find((n) => n.id === id);
+          if (!targetNode) return;
+          const component = targetNode.data as SwitchComponent;
+          if (component.type !== 'switch' || component.switchType !== 'pushbutton') return;
+          if (component.isPressed === isPressed) return;
+
+          const nextNodes = currentNodes.map((n) => {
+            if (n.id !== id) return n;
+            return {
+              ...n,
+              data: {
+                ...component,
+                isPressed,
+                status: isPressed ? 'active' : 'normal',
+              },
+            } as AppNode;
+          });
+
+          const evalState = evaluateGraphState(nextNodes, get().edges);
+          set({
+            nodes: evalState.nodes,
+            edges: evalState.edges,
+            validationErrors: evalState.validationErrors,
+            hasShortCircuit: evalState.hasShortCircuit,
+          });
+        },
+
         resetBreakers: () => {
           const nextNodes = get().nodes.map((n) => {
             if (n.data.type === 'breaker') {

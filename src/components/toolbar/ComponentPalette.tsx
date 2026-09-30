@@ -2,20 +2,22 @@ import React, { useState } from 'react';
 import {
   Zap,
   Shield,
-  ToggleRight,
-  Split,
-  GitCommit,
   Lightbulb,
   Plug,
   Bell,
   Fan,
   Layers,
-  CircleDot,
   Plus,
   ChevronLeft,
   RotateCw,
   Search,
 } from 'lucide-react';
+import {
+  SwitchSimpleIcon,
+  SwitchTwoWayIcon,
+  SwitchIntermediateIcon,
+  SwitchPushbuttonIcon,
+} from '../icons/ElectricalSwitchIcons';
 import { useSchematicStore } from '../../store/schematicStore';
 import { PRESET_CIRCUITS } from '../../engine/presets';
 import type { ComponentType } from '../../types/electrical';
@@ -66,7 +68,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
     type: 'switch',
     subType: 'single_pole',
     description: 'Corte unipolar Fase',
-    icon: <ToggleRight className="w-4 h-4 text-amber-300" />,
+    icon: <SwitchSimpleIcon className="w-5 h-5 text-amber-400" />,
     category: 'switch',
   },
   {
@@ -74,7 +76,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
     type: 'switch',
     subType: 'two_way',
     description: 'Control desde 2 puntos',
-    icon: <Split className="w-4 h-4 text-indigo-300" />,
+    icon: <SwitchTwoWayIcon className="w-5 h-5 text-indigo-400" />,
     category: 'switch',
   },
   {
@@ -82,7 +84,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
     type: 'switch',
     subType: 'intermediate',
     description: 'Control intermedio 3+ puntos',
-    icon: <GitCommit className="w-4 h-4 text-violet-300" />,
+    icon: <SwitchIntermediateIcon className="w-5 h-5 text-violet-400" />,
     category: 'switch',
   },
   {
@@ -90,7 +92,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
     type: 'switch',
     subType: 'pushbutton',
     description: 'Contacto momentáneo timbre',
-    icon: <CircleDot className="w-4 h-4 text-yellow-300" />,
+    icon: <SwitchPushbuttonIcon className="w-5 h-5 text-yellow-400" />,
     category: 'switch',
   },
   {
