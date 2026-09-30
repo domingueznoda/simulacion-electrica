@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
           </div>
           <div>
             <div className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-              ElectroSim <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-500/20 text-amber-400 rounded border border-amber-500/30">PWA</span>
+              ElectroSimulador
             </div>
             <div className="text-[10px] text-slate-400 font-mono hidden sm:block">Simulador Multifilar & REBT</div>
           </div>

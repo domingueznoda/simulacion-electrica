@@ -154,6 +154,7 @@ export const useSchematicStore = create<SchematicStore>()(
         nodes: initialEval.nodes,
         edges: initialEval.edges,
         selectedNodeId: null,
+        selectedEdgeId: null,
         validationErrors: initialEval.validationErrors,
         isSimulating: true,
         hasShortCircuit: initialEval.hasShortCircuit,
@@ -324,6 +325,7 @@ export const useSchematicStore = create<SchematicStore>()(
             validationErrors: evalState.validationErrors,
             hasShortCircuit: evalState.hasShortCircuit,
             selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
+            selectedEdgeId: nextEdges.some((e) => e.id === get().selectedEdgeId) ? get().selectedEdgeId : null,
           });
         },
 
@@ -405,6 +407,7 @@ export const useSchematicStore = create<SchematicStore>()(
             edges: evalState.edges,
             validationErrors: evalState.validationErrors,
             hasShortCircuit: evalState.hasShortCircuit,
+            selectedEdgeId: get().selectedEdgeId === id ? null : get().selectedEdgeId,
           });
         },
 
@@ -550,7 +553,11 @@ export const useSchematicStore = create<SchematicStore>()(
         },
 
         setSelectedNodeId: (id) => {
-          set({ selectedNodeId: id });
+          set({ selectedNodeId: id, selectedEdgeId: id ? null : get().selectedEdgeId });
+        },
+
+        setSelectedEdgeId: (id) => {
+          set({ selectedEdgeId: id, selectedNodeId: id ? null : get().selectedNodeId });
         },
 
         loadPreset: (presetKey) => {
@@ -565,6 +572,7 @@ export const useSchematicStore = create<SchematicStore>()(
             hasShortCircuit: evalState.hasShortCircuit,
             activePreset: presetKey,
             selectedNodeId: null,
+            selectedEdgeId: null,
           });
         },
 
@@ -575,6 +583,7 @@ export const useSchematicStore = create<SchematicStore>()(
             validationErrors: [],
             hasShortCircuit: false,
             selectedNodeId: null,
+            selectedEdgeId: null,
           });
         },
       };

@@ -29,6 +29,9 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
   selected,
 }) => {
   const removeEdge = useSchematicStore((s) => s.removeEdge);
+  const selectedEdgeId = useSchematicStore((s) => s.selectedEdgeId);
+  const isSelected = selected || selectedEdgeId === id;
+
   const cable = (data as CableData) || {
     wireType: 'phase',
     crossSectionMm2: 1.5,
@@ -50,8 +53,8 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
 
   const wireColorCfg = WIRE_COLORS[cable.wireType] || WIRE_COLORS.phase;
   const isShort = cable.isShortCircuited;
-  const strokeColor = isShort ? '#ef4444' : wireColorCfg.stroke;
-  const strokeWidth = cable.crossSectionMm2 >= 4 ? 4 : cable.crossSectionMm2 >= 2.5 ? 3 : 2.5;
+  const strokeColor = isShort ? '#ef4444' : isSelected ? '#fbbf24' : wireColorCfg.stroke;
+  const strokeWidth = (cable.crossSectionMm2 >= 4 ? 4 : cable.crossSectionMm2 >= 2.5 ? 3 : 2.5) + (isSelected ? 1.5 : 0);
 
   return (
     <>
@@ -76,7 +79,7 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
           strokeWidth,
           strokeDasharray: cable.hasCurrent ? '8,5' : undefined,
           animation: cable.hasCurrent ? 'electricalFlowAC 1.2s ease-in-out infinite' : undefined,
-          filter: selected ? 'drop-shadow(0 0 4px rgba(255,255,255,0.7))' : undefined,
+          filter: isSelected ? 'drop-shadow(0 0 6px rgba(251, 191, 36, 0.9))' : undefined,
         }}
       />
 
@@ -87,7 +90,9 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className="group flex items-center gap-1 bg-slate-900/90 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-700/80 text-[10px] text-slate-300 font-mono shadow-md transition hover:border-slate-500"
+          className={`group flex items-center gap-1 bg-slate-900/90 backdrop-blur-xs px-2 py-0.5 rounded-full border text-[10px] text-slate-300 font-mono shadow-md transition ${
+            isSelected ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-slate-700/80 hover:border-slate-500'
+          }`}
         >
           {isShort ? (
             <span className="flex items-center gap-0.5 text-rose-400 font-bold animate-bounce">
@@ -105,7 +110,10 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
           )}
 
           <button
-            onClick={() => removeEdge(id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              removeEdge(id);
+            }}
             className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-400 transition cursor-pointer p-0.5"
             title="Eliminar conductor"
           >

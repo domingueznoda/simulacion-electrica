@@ -150,6 +150,7 @@ export interface SchematicStore {
   nodes: AppNode[];
   edges: AppEdge[];
   selectedNodeId: string | null;
+  selectedEdgeId: string | null;
   validationErrors: ValidationError[];
   isSimulating: boolean;
   hasShortCircuit: boolean;
@@ -170,6 +171,7 @@ export interface SchematicStore {
   runSimulation: () => void;
   setSimulating: (active: boolean) => void;
   setSelectedNodeId: (id: string | null) => void;
+  setSelectedEdgeId: (id: string | null) => void;
   loadPreset: (presetKey: string) => void;
   clearCanvas: () => void;
 }

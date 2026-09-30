@@ -7,6 +7,7 @@ import {
   BackgroundVariant,
   type Connection,
   type Node,
+  type Edge,
 } from '@xyflow/react';
 import { Plus } from 'lucide-react';
 import { useSchematicStore } from '../../store/schematicStore';
@@ -33,6 +34,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
   const onEdgesChange = useSchematicStore((s) => s.onEdgesChange);
   const connectNodes = useSchematicStore((s) => s.connectNodes);
   const setSelectedNodeId = useSchematicStore((s) => s.setSelectedNodeId);
+  const setSelectedEdgeId = useSchematicStore((s) => s.setSelectedEdgeId);
 
   const nodeTypes = useMemo(
     () => ({
@@ -68,9 +70,17 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
     [setSelectedNodeId]
   );
 
+  const handleEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      setSelectedEdgeId(edge.id);
+    },
+    [setSelectedEdgeId]
+  );
+
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null);
-  }, [setSelectedNodeId]);
+    setSelectedEdgeId(null);
+  }, [setSelectedNodeId, setSelectedEdgeId]);
 
   return (
     <div className="flex-1 w-full h-full relative bg-slate-950">
@@ -91,6 +101,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onNodeClick={handleNodeClick}
+        onEdgeClick={handleEdgeClick}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
