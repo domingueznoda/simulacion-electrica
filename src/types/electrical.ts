@@ -48,7 +48,7 @@ export interface PowerSourceComponent extends ElectricalComponent {
   isPowered: boolean;
 }
 
-export type BreakerType = 'circuit_breaker' | 'rcd' | 'fuse';
+export type BreakerType = 'circuit_breaker' | 'rcd' | 'iga' | 'pcs' | 'fuse';
 export type BreakerCurve = 'B' | 'C' | 'D';
 
 export interface BreakerComponent extends ElectricalComponent {
@@ -61,6 +61,7 @@ export interface BreakerComponent extends ElectricalComponent {
   isTripped: boolean;
   tripReason?: string;
   measuredCurrentAmps?: number;
+  rcdSensitivityMa?: number;
 }
 
 export type SwitchType = 'single_pole' | 'two_way' | 'intermediate' | 'pushbutton';
@@ -174,6 +175,7 @@ export interface SchematicStore {
   toggleNodeState: (id: string) => void;
   setNodePressed: (id: string, isPressed: boolean) => void;
   resetBreakers: () => void;
+  testRcd: (id: string) => void;
   runSimulation: () => void;
   setSimulating: (active: boolean) => void;
   setSelectedNodeId: (id: string | null) => void;

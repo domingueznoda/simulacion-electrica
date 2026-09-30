@@ -147,7 +147,7 @@ function evaluateGraphState(nodes: AppNode[], edges: AppEdge[]) {
 export const useSchematicStore = create<SchematicStore>()(
   persist(
     (set, get) => {
-      const initialPreset = PRESET_CIRCUITS.two_way_switch;
+      const initialPreset = PRESET_CIRCUITS.full_house_rebt || PRESET_CIRCUITS.simple_light;
       const initialEval = evaluateGraphState(initialPreset.nodes, initialPreset.edges);
 
       return {
@@ -158,7 +158,7 @@ export const useSchematicStore = create<SchematicStore>()(
         validationErrors: initialEval.validationErrors,
         isSimulating: true,
         hasShortCircuit: initialEval.hasShortCircuit,
-        activePreset: 'two_way_switch',
+        activePreset: 'full_house_rebt',
 
         setNodes: (nodes) => {
           const evalState = evaluateGraphState(nodes, get().edges);
@@ -223,21 +223,74 @@ export const useSchematicStore = create<SchematicStore>()(
             };
           } else if (type === 'breaker') {
             nodeType = 'breakerNode';
-            const ratedAmps = subType === '16A' ? 16 : subType === '25A' ? 25 : 10;
-            nodeData = {
-              id,
-              name: `PIA ${ratedAmps}A`,
-              type: 'breaker',
-              breakerType: 'circuit_breaker',
-              ratedCurrent: ratedAmps,
-              curve: 'C',
-              breakingCapacityKa: 6,
-              isClosed: true,
-              isTripped: false,
-              isEnergized: false,
-              status: 'normal',
-              terminals: createDefaultTerminals('breaker'),
-            };
+            if (subType === 'iga_40') {
+              nodeData = {
+                id,
+                name: 'IGA 40A General',
+                type: 'breaker',
+                breakerType: 'iga',
+                ratedCurrent: 40,
+                curve: 'C',
+                breakingCapacityKa: 6,
+                isClosed: true,
+                isTripped: false,
+                isEnergized: false,
+                status: 'normal',
+                terminals: createDefaultTerminals('breaker'),
+              };
+            } else if (subType === 'pcs_40') {
+              nodeData = {
+                id,
+                name: 'PCS Sobretensiones',
+                type: 'breaker',
+                breakerType: 'pcs',
+                ratedCurrent: 40,
+                curve: 'C',
+                breakingCapacityKa: 10,
+                isClosed: true,
+                isTripped: false,
+                isEnergized: false,
+                status: 'normal',
+                terminals: createDefaultTerminals('breaker'),
+              };
+            } else if (subType === 'rcd_40') {
+              nodeData = {
+                id,
+                name: 'Diferencial ID 40A 30mA',
+                type: 'breaker',
+                breakerType: 'rcd',
+                ratedCurrent: 40,
+                rcdSensitivityMa: 30,
+                curve: 'C',
+                breakingCapacityKa: 6,
+                isClosed: true,
+                isTripped: false,
+                isEnergized: false,
+                status: 'normal',
+                terminals: createDefaultTerminals('breaker'),
+              };
+            } else {
+              const ratedAmps =
+                subType === '16A' ? 16 :
+                subType === '20A' ? 20 :
+                subType === '25A' ? 25 :
+                subType === '32A' ? 32 :
+                subType === '40A' ? 40 : 10;
+              nodeData = {
+                id,
+                name: `PIA ${ratedAmps}A`,
+                type: 'breaker',
+                breakerType: 'circuit_breaker',
+                ratedCurrent: ratedAmps,
+                curve: 'C',
+                breakingCapacityKa: 6,
+                isClosed: true,
+                isTripped: false,
+                isEnergized: false,
+                status: 'normal',
+                terminals: createDefaultTerminals('breaker'),
+              };
+            }
           } else if (type === 'switch') {
             nodeType = 'switchNode';
             const st = (subType as SwitchComponent['switchType']) || 'single_pole';
@@ -564,6 +617,31 @@ export const useSchematicStore = create<SchematicStore>()(
           });
         },
 
+        testRcd: (id) => {
+          const nextNodes = get().nodes.map((n) => {
+            if (n.id !== id) return n;
+            const brk = n.data as BreakerComponent;
+            return {
+              ...n,
+              data: {
+                ...brk,
+                isTripped: true,
+                isClosed: false,
+                status: 'tripped',
+                tripReason: 'Disparo diferencial por prueba de test de fuga (IΔn = 30mA)',
+              },
+            } as AppNode;
+          });
+
+          const evalState = evaluateGraphState(nextNodes, get().edges);
+          set({
+            nodes: evalState.nodes,
+            edges: evalState.edges,
+            validationErrors: evalState.validationErrors,
+            hasShortCircuit: evalState.hasShortCircuit,
+          });
+        },
+
         runSimulation: () => {
           const evalState = evaluateGraphState(get().nodes, get().edges);
           set({
@@ -618,7 +696,7 @@ export const useSchematicStore = create<SchematicStore>()(
       };
     },
     {
-      name: 'electrosim-schematic-storage-v2',
+      name: 'electrosim-schematic-storage-v3',
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
