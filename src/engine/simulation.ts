@@ -15,13 +15,7 @@ interface GraphTerminalRef {
   terminalId: string;
 }
 
-interface ZeroOhmConnection {
-  t1: GraphTerminalRef;
-  t2: GraphTerminalRef;
-  edgeId?: string;
-}
-
-function getSwitchInternalConnections(sw: SwitchComponent, nodeId: string): Array<[string, string]> {
+function getSwitchInternalConnections(sw: SwitchComponent): Array<[string, string]> {
   if (sw.switchType === 'single_pole') {
     if (sw.position === 'closed') {
       return [['term-sw-in', 'term-sw-out']];
@@ -65,10 +59,14 @@ function getSwitchInternalConnections(sw: SwitchComponent, nodeId: string): Arra
   return [];
 }
 
-function getInternalZeroOhmConnections(node: AppNode): Array<[string, string]> {
+function getInternalZeroOhmConnections(
+  node: AppNode,
+  excludedBreakerIds: Set<string>
+): Array<[string, string]> {
   const comp = node.data;
 
   if (comp.type === 'breaker') {
+    if (excludedBreakerIds.has(node.id)) return [];
     const breaker = comp as BreakerComponent;
     if (breaker.isClosed && !breaker.isTripped) {
       return [
@@ -80,7 +78,7 @@ function getInternalZeroOhmConnections(node: AppNode): Array<[string, string]> {
   }
 
   if (comp.type === 'switch') {
-    return getSwitchInternalConnections(comp as SwitchComponent, node.id);
+    return getSwitchInternalConnections(comp as SwitchComponent);
   }
 
   if (comp.type === 'junction') {
@@ -106,22 +104,42 @@ interface Net {
   hasGround: boolean;
 }
 
-export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): SimulationResult {
-  const energizedNodeIds = new Set<string>();
-  const activeLoadIds = new Set<string>();
-  const energizedEdgeIds = new Set<string>();
-  const activeEdgeIds = new Set<string>();
-  const shortCircuitEdgeIds = new Set<string>();
-  const trippedBreakerIds = new Set<string>();
-  const nodeStates = new Map<string, Partial<AnyElectricalComponent>>();
+interface LoadBranch {
+  nodeId: string;
+  netA: Net;
+  netB: Net;
+  resistance: number;
+  nominalPower: number;
+}
 
+interface CircuitPath {
+  pathKey: string;
+  nets: number[];
+  branches: LoadBranch[];
+  totalResistance: number;
+  current: number;
+}
+
+interface NetworkEvaluation {
+  nets: Net[];
+  termToNetMap: Map<string, Net>;
+  directShortCircuit: boolean;
+  shortCircuitEdgeIds: Set<string>;
+  validPaths: CircuitPath[];
+}
+
+function termKey(nodeId: string, terminalId: string): string {
+  return `${nodeId}::${terminalId}`;
+}
+
+function evaluateNetwork(
+  nodes: AppNode[],
+  edges: AppEdge[],
+  excludedBreakerIds: Set<string>
+): NetworkEvaluation {
   const nodeMap = new Map<string, AppNode>();
   for (const node of nodes) {
     nodeMap.set(node.id, node);
-  }
-
-  function termKey(nodeId: string, terminalId: string): string {
-    return `${nodeId}::${terminalId}`;
   }
 
   const zeroAdj = new Map<string, Array<{ toKey: string; edgeId?: string }>>();
@@ -140,7 +158,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
   }
 
   for (const node of nodes) {
-    const pairs = getInternalZeroOhmConnections(node);
+    const pairs = getInternalZeroOhmConnections(node, excludedBreakerIds);
     for (const [t1, t2] of pairs) {
       addZeroEdge(termKey(node.id, t1), termKey(node.id, t2));
     }
@@ -216,6 +234,8 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
   }
 
   let directShortCircuit = false;
+  const shortCircuitEdgeIds = new Set<string>();
+
   for (const net of nets) {
     if ((net.hasPhase && net.hasNeutral) || (net.hasPhase && net.hasGround)) {
       directShortCircuit = true;
@@ -226,51 +246,13 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
   }
 
   if (directShortCircuit) {
-    for (const node of nodes) {
-      if (node.data.type === 'breaker') {
-        const brk = node.data as BreakerComponent;
-        if (brk.isClosed && !brk.isTripped) {
-          trippedBreakerIds.add(node.id);
-          nodeStates.set(node.id, {
-            isTripped: true,
-            isClosed: false,
-            tripReason: 'Disparo magnético por cortocircuito directo L-N / L-PE',
-            status: 'tripped',
-          });
-        }
-      }
-    }
-
-    for (const net of nets) {
-      if (net.hasPhase) {
-        for (const edgeId of net.edgeIds) {
-          energizedEdgeIds.add(edgeId);
-        }
-        for (const t of net.terminals) {
-          const [nId] = t.split('::');
-          energizedNodeIds.add(nId);
-        }
-      }
-    }
-
     return {
-      energizedNodeIds,
-      activeLoadIds,
-      energizedEdgeIds,
-      activeEdgeIds,
+      nets,
+      termToNetMap,
+      directShortCircuit: true,
       shortCircuitEdgeIds,
-      hasShortCircuit: true,
-      trippedBreakerIds,
-      nodeStates,
+      validPaths: [],
     };
-  }
-
-  interface LoadBranch {
-    nodeId: string;
-    netA: Net;
-    netB: Net;
-    resistance: number;
-    nominalPower: number;
   }
 
   const loadBranches: LoadBranch[] = [];
@@ -315,20 +297,24 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     if (net.hasNeutral) neutralNetIds.add(net.id);
   }
 
-  interface SimplePath {
-    nets: number[];
-    branches: LoadBranch[];
-    totalResistance: number;
-  }
+  const validPaths: CircuitPath[] = [];
 
-  const validPaths: SimplePath[] = [];
-
-  function dfsPaths(currNetId: number, visitedNetIds: Set<number>, pathNets: number[], pathBranches: LoadBranch[], accR: number) {
+  function dfsPaths(
+    currNetId: number,
+    visitedNetIds: Set<number>,
+    pathNets: number[],
+    pathBranches: LoadBranch[],
+    accR: number
+  ) {
     if (neutralNetIds.has(currNetId)) {
+      const current = 230 / Math.max(accR, 1);
+      const branchKey = pathBranches.map((b) => b.nodeId).sort().join('->');
       validPaths.push({
+        pathKey: `${pathNets[0]}::${branchKey}::${currNetId}`,
         nets: [...pathNets],
         branches: [...pathBranches],
         totalResistance: accR,
+        current,
       });
       return;
     }
@@ -356,22 +342,129 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     dfsPaths(pNetId, visited, [pNetId], [], 0);
   }
 
-  const activeBranchMap = new Map<string, { branch: LoadBranch; pathLength: number; voltage: number; current: number }>();
+  return {
+    nets,
+    termToNetMap,
+    directShortCircuit: false,
+    shortCircuitEdgeIds,
+    validPaths,
+  };
+}
+
+export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): SimulationResult {
+  const energizedNodeIds = new Set<string>();
+  const activeLoadIds = new Set<string>();
+  const energizedEdgeIds = new Set<string>();
+  const activeEdgeIds = new Set<string>();
+  const shortCircuitEdgeIds = new Set<string>();
+  const trippedBreakerIds = new Set<string>();
+  const nodeStates = new Map<string, Partial<AnyElectricalComponent>>();
+
+  const baseEval = evaluateNetwork(nodes, edges, new Set<string>());
+
+  if (baseEval.directShortCircuit) {
+    for (const node of nodes) {
+      if (node.data.type === 'breaker') {
+        const brk = node.data as BreakerComponent;
+        if (brk.isClosed && !brk.isTripped) {
+          trippedBreakerIds.add(node.id);
+          nodeStates.set(node.id, {
+            isTripped: true,
+            isClosed: false,
+            tripReason: 'Disparo magnético por cortocircuito directo L-N / L-PE',
+            status: 'tripped',
+            measuredCurrentAmps: 0,
+          });
+        }
+      }
+    }
+
+    for (const net of baseEval.nets) {
+      if (net.hasPhase) {
+        for (const edgeId of net.edgeIds) {
+          energizedEdgeIds.add(edgeId);
+        }
+        for (const t of net.terminals) {
+          const [nId] = t.split('::');
+          energizedNodeIds.add(nId);
+        }
+      }
+    }
+
+    return {
+      energizedNodeIds,
+      activeLoadIds,
+      energizedEdgeIds,
+      activeEdgeIds,
+      shortCircuitEdgeIds: baseEval.shortCircuitEdgeIds,
+      hasShortCircuit: true,
+      trippedBreakerIds,
+      nodeStates,
+    };
+  }
+
+  const closedBreakerNodes = nodes.filter(
+    (n) => n.data.type === 'breaker' && (n.data as BreakerComponent).isClosed && !(n.data as BreakerComponent).isTripped
+  );
+
+  const breakerCurrents = new Map<string, number>();
+  const newlyTrippedBreakerIds = new Set<string>();
+
+  for (const bNode of closedBreakerNodes) {
+    const brk = bNode.data as BreakerComponent;
+    const withoutEval = evaluateNetwork(nodes, edges, new Set<string>([bNode.id]));
+    const survivingKeys = new Set(withoutEval.validPaths.map((p) => p.pathKey));
+
+    let currentThroughBreaker = 0;
+    for (const path of baseEval.validPaths) {
+      if (!survivingKeys.has(path.pathKey)) {
+        currentThroughBreaker += path.current;
+      }
+    }
+
+    const currentRounded = Number(currentThroughBreaker.toFixed(2));
+    breakerCurrents.set(bNode.id, currentRounded);
+
+    if (currentRounded > brk.ratedCurrent + 0.05) {
+      newlyTrippedBreakerIds.add(bNode.id);
+      trippedBreakerIds.add(bNode.id);
+      nodeStates.set(bNode.id, {
+        isTripped: true,
+        isClosed: false,
+        status: 'tripped',
+        tripReason: `Disparo térmico por sobrecarga: corriente circulante (${currentRounded.toFixed(1)}A) supera el calibre nominal (${brk.ratedCurrent}A)`,
+        measuredCurrentAmps: currentRounded,
+      });
+    } else {
+      nodeStates.set(bNode.id, {
+        measuredCurrentAmps: currentRounded,
+      });
+    }
+  }
+
+  const finalEval =
+    newlyTrippedBreakerIds.size > 0
+      ? evaluateNetwork(nodes, edges, newlyTrippedBreakerIds)
+      : baseEval;
+
+  const activeBranchMap = new Map<
+    string,
+    { branch: LoadBranch; pathLength: number; voltage: number; current: number }
+  >();
   const participatingNetIds = new Set<number>();
 
-  for (const path of validPaths) {
-    const current = 230 / Math.max(path.totalResistance, 1);
+  for (const path of finalEval.validPaths) {
     for (const netId of path.nets) {
       participatingNetIds.add(netId);
     }
 
     for (const b of path.branches) {
-      const vDrop = current * b.resistance;
+      const vDrop = path.current * b.resistance;
       activeBranchMap.set(b.nodeId, {
         branch: b,
         pathLength: path.branches.length,
         voltage: Math.min(230, Math.round(vDrop)),
-        current: Number(current.toFixed(2)),
+        current: Number(path.current.toFixed(2)),
       });
     }
   }
@@ -390,7 +483,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     });
   }
 
-  for (const net of nets) {
+  for (const net of finalEval.nets) {
     const isNetPhaseEnergized = net.hasPhase || participatingNetIds.has(net.id);
     if (isNetPhaseEnergized) {
       for (const t of net.terminals) {
@@ -413,22 +506,27 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     if (node.data.type === 'load' && !activeLoadIds.has(node.id)) {
       const kA = termKey(node.id, 'term-load-l');
       const kB = termKey(node.id, 'term-load-n');
-      const netA = termToNetMap.get(kA);
-      const netB = termToNetMap.get(kB);
+      const netA = finalEval.termToNetMap.get(kA);
+      const netB = finalEval.termToNetMap.get(kB);
 
-      const hasPhaseContact = (netA && (netA.hasPhase || participatingNetIds.has(netA.id))) ||
-                              (netB && (netB.hasPhase || participatingNetIds.has(netB.id)));
+      const hasPhase = Boolean((netA && netA.hasPhase) || (netB && netB.hasPhase));
+      const hasNeutral = Boolean((netA && netA.hasNeutral) || (netB && netB.hasNeutral));
+
+      const isEnergized = hasPhase;
+      const status = hasPhase && !hasNeutral ? 'warning' : 'normal';
 
       nodeStates.set(node.id, {
         isOn: false,
-        status: hasPhaseContact ? 'warning' : 'normal',
+        status,
         currentDrawAmps: 0,
-        isEnergized: Boolean(hasPhaseContact),
+        isEnergized,
         isSeries: false,
         voltageDropVolts: 0,
+        hasPhaseContact: hasPhase,
+        hasNeutralContact: hasNeutral,
       });
 
-      if (hasPhaseContact) {
+      if (isEnergized) {
         energizedNodeIds.add(node.id);
       }
     }
@@ -439,7 +537,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     activeLoadIds,
     energizedEdgeIds,
     activeEdgeIds,
-    shortCircuitEdgeIds,
+    shortCircuitEdgeIds: finalEval.shortCircuitEdgeIds,
     hasShortCircuit: false,
     trippedBreakerIds,
     nodeStates,

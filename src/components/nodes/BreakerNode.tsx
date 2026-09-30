@@ -75,6 +75,37 @@ export const BreakerNode: React.FC<{ id: string; data: BreakerComponent; selecte
           </div>
         )}
 
+        <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800 space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">Intensidad actual:</span>
+            <span className={`font-mono font-bold ${
+              data.isTripped
+                ? 'text-rose-400'
+                : (data.measuredCurrentAmps || 0) > data.ratedCurrent * 0.8
+                ? 'text-amber-400'
+                : 'text-emerald-400'
+            }`}>
+              {data.measuredCurrentAmps ?? 0} A / {data.ratedCurrent} A
+            </span>
+          </div>
+          <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                data.isTripped
+                  ? 'bg-rose-500 w-full'
+                  : (data.measuredCurrentAmps || 0) > data.ratedCurrent * 0.8
+                  ? 'bg-amber-400'
+                  : 'bg-emerald-500'
+              }`}
+              style={{
+                width: data.isTripped
+                  ? '100%'
+                  : `${Math.min(100, Math.round(((data.measuredCurrentAmps || 0) / data.ratedCurrent) * 100))}%`,
+              }}
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400 font-mono">
           <div className="bg-slate-950/40 p-1.5 rounded border border-slate-800/60 text-center">
             Poder de corte: {data.breakingCapacityKa} kA

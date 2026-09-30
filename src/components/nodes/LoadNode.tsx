@@ -1,13 +1,17 @@
 import React, { useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Lightbulb, Plug, Bell, Fan, AlertTriangle, Volume2, VolumeX } from 'lucide-react';
+import { Lightbulb, Plug, Bell, Fan, AlertTriangle } from 'lucide-react';
 import type { LoadComponent } from '../../types/electrical';
 import { buzzerAudio } from '../../utils/buzzerAudio';
+import { useSchematicStore } from '../../store/schematicStore';
 
 export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boolean }> = ({
+  id,
   data,
   selected,
 }) => {
+  const updateNodeData = useSchematicStore((s) => s.updateNodeData);
+
   useEffect(() => {
     if (data.loadType === 'buzzer') {
       if (data.isOn) {
@@ -34,7 +38,7 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
             className={`relative p-3 rounded-full transition-all duration-300 ${
               data.isOn
                 ? 'bg-amber-400 text-slate-950 shadow-[0_0_30px_rgba(251,191,36,0.8)] scale-110'
-                : data.isEnergized
+                : data.hasPhaseContact
                 ? 'bg-slate-800 text-amber-500/80 border border-amber-500/40'
                 : 'bg-slate-800 text-slate-500 border border-slate-700'
             }`}
@@ -74,7 +78,7 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
             className={`relative p-3 rounded-full border transition-all duration-300 ${
               data.isOn
                 ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.8)] scale-110'
-                : data.isEnergized
+                : data.hasPhaseContact
                 ? 'bg-slate-800 text-rose-400/80 border border-rose-500/40'
                 : 'bg-slate-800 text-slate-500 border border-slate-700'
             }`}
@@ -106,7 +110,7 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
       if (data.isSeries) return `ENCENDIDA (${data.voltageDropVolts || 115}V SERIE)`;
       return 'ENCENDIDA (230V)';
     }
-    if (data.isEnergized) {
+    if (data.hasPhaseContact && !data.hasNeutralContact) {
       return 'FASE ACTIVA (FALTA NEUTRO)';
     }
     return 'APAGADA';
@@ -130,7 +134,7 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
               ? data.loadType === 'buzzer'
                 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 animate-pulse'
                 : 'bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse'
-              : data.isEnergized
+              : data.hasPhaseContact && !data.hasNeutralContact
               ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
               : 'bg-slate-800 text-slate-400'
           }`}
@@ -142,28 +146,73 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
       <div className="p-3 space-y-2">
         {renderVisualIcon()}
 
-        {data.isEnergized && !data.isOn && (
+        {data.hasPhaseContact && !data.hasNeutralContact && !data.isOn && (
           <div className="flex items-center gap-1.5 p-1.5 bg-amber-950/40 border border-amber-800/60 rounded text-[10px] text-amber-300">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>Circuito incompleto: conecte el retorno de Neutro</span>
+            <span>Fase conectada pero falta retorno de Neutro</span>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-950/60 p-2 rounded-lg border border-slate-800">
           <div>
             <div className="text-slate-400">Potencia / Tensión:</div>
-            <div className="font-mono font-semibold text-slate-200">
-              {data.ratedPowerWatts} W
+            <div className="flex items-center gap-1 mt-0.5">
+              <input
+                type="number"
+                value={data.ratedPowerWatts}
+                onChange={(e) =>
+                  updateNodeData(id, {
+                    ratedPowerWatts: Math.max(0, Number(e.target.value)),
+                  })
+                }
+                onClick={(e) => e.stopPropagation()}
+                className="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono font-semibold text-slate-200 text-xs focus:ring-1 focus:ring-amber-400 focus:outline-hidden"
+              />
+              <span className="font-mono text-slate-400">W</span>
               {data.isOn && (
-                <span className="text-amber-400 font-normal ml-1">
+                <span className="text-amber-400 font-normal text-[10px] ml-0.5">
                   ({data.voltageDropVolts || 230}V)
                 </span>
               )}
             </div>
+            <div className="flex items-center gap-1 mt-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateNodeData(id, { ratedPowerWatts: 15 });
+                }}
+                className="text-[9px] px-1 py-0.2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+              >
+                15W
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateNodeData(id, { ratedPowerWatts: 1500 });
+                }}
+                className="text-[9px] px-1 py-0.2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+              >
+                1.5kW
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateNodeData(id, { ratedPowerWatts: 15000 });
+                }}
+                className="text-[9px] px-1 py-0.2 bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 rounded border border-rose-800 cursor-pointer"
+              >
+                15kW
+              </button>
+            </div>
           </div>
           <div>
             <div className="text-slate-400">Consumo:</div>
-            <div className="font-mono font-semibold text-emerald-400">{data.currentDrawAmps} A</div>
+            <div className="font-mono font-semibold text-emerald-400 text-xs pt-1">
+              {data.currentDrawAmps} A
+            </div>
           </div>
         </div>
 

@@ -60,6 +60,7 @@ export interface BreakerComponent extends ElectricalComponent {
   isClosed: boolean;
   isTripped: boolean;
   tripReason?: string;
+  measuredCurrentAmps?: number;
 }
 
 export type SwitchType = 'single_pole' | 'two_way' | 'intermediate' | 'pushbutton';
@@ -83,6 +84,8 @@ export interface LoadComponent extends ElectricalComponent {
   currentDrawAmps: number;
   voltageDropVolts?: number;
   isSeries?: boolean;
+  hasPhaseContact?: boolean;
+  hasNeutralContact?: boolean;
 }
 
 export type JunctionType = 'wago_3' | 'wago_5' | 'terminal_strip';
