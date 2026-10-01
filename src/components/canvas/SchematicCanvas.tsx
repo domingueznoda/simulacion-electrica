@@ -3,7 +3,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   BackgroundVariant,
   type Connection,
   type Node,
@@ -119,7 +118,7 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
           size={1.5}
           color="#334155"
         />
-        <Controls className="!bg-slate-900 !border-slate-700 !text-slate-600 fill-slate-200 rounded-lg shadow-xl" />
+        <Controls className="!bg-slate-900 !border-slate-700 rounded-xl shadow-2xl overflow-hidden" />
       </ReactFlow>
     </div>
   );

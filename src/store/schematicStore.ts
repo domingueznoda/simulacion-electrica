@@ -23,6 +23,7 @@ import type {
 import { simulateElectricalCircuit } from '../engine/simulation';
 import { validateElectricalSchematic } from '../engine/validation';
 import { PRESET_CIRCUITS } from '../engine/presets';
+import { soundEffects } from '../utils/soundEffects';
 
 function createDefaultTerminals(type: ComponentType, subType?: string): Terminal[] {
   if (type === 'source') {
@@ -98,7 +99,21 @@ function determineWireType(sourceHandle: string, targetHandle: string): WireType
 }
 
 function evaluateGraphState(nodes: AppNode[], edges: AppEdge[]) {
+  const previousTrippedBreakers = new Set(
+    nodes
+      .filter((n) => n.data.type === 'breaker' && (n.data as BreakerComponent).isTripped)
+      .map((n) => n.id)
+  );
+
   const simResult = simulateElectricalCircuit(nodes, edges);
+
+  // Comprobar si alguna protección se ha desarmado automáticamente (cortocircuito o sobrecarga)
+  for (const trippedId of simResult.trippedBreakerIds) {
+    if (!previousTrippedBreakers.has(trippedId)) {
+      soundEffects.playBreakerTrip();
+      break;
+    }
+  }
 
   const updatedNodes = nodes.map((node) => {
     const dynamicOverrides = simResult.nodeStates.get(node.id);
@@ -497,6 +512,7 @@ export const useSchematicStore = create<SchematicStore>()(
             const sw = component as SwitchComponent;
             if (sw.switchType === 'single_pole') {
               const nextPos = sw.position === 'closed' ? 'open' : 'closed';
+              soundEffects.playSwitchClick(nextPos === 'closed' ? 'on' : 'off');
               updatedComponent = {
                 ...sw,
                 position: nextPos,
@@ -504,26 +520,31 @@ export const useSchematicStore = create<SchematicStore>()(
               };
             } else if (sw.switchType === 'two_way') {
               const nextPos = sw.position === 'pos_1' ? 'pos_2' : 'pos_1';
+              soundEffects.playSwitchClick(nextPos === 'pos_1' ? 'on' : 'off');
               updatedComponent = {
                 ...sw,
                 position: nextPos,
               };
             } else if (sw.switchType === 'intermediate') {
               const nextPos = sw.position === 'straight' ? 'crossed' : 'straight';
+              soundEffects.playSwitchClick(nextPos === 'straight' ? 'on' : 'off');
               updatedComponent = {
                 ...sw,
                 position: nextPos,
               };
             } else if (sw.switchType === 'pushbutton') {
+              const nextPressed = !sw.isPressed;
+              soundEffects.playSwitchClick(nextPressed ? 'push_down' : 'push_up');
               updatedComponent = {
                 ...sw,
-                isPressed: !sw.isPressed,
-                status: !sw.isPressed ? 'active' : 'normal',
+                isPressed: nextPressed,
+                status: nextPressed ? 'active' : 'normal',
               };
             }
           } else if (component.type === 'breaker') {
             const brk = component as BreakerComponent;
             if (brk.isTripped) {
+              soundEffects.playBreakerToggle('rearm');
               updatedComponent = {
                 ...brk,
                 isTripped: false,
@@ -532,13 +553,16 @@ export const useSchematicStore = create<SchematicStore>()(
                 tripReason: undefined,
               };
             } else {
+              const willBeClosed = !brk.isClosed;
+              soundEffects.playBreakerToggle(willBeClosed ? 'rearm' : 'open');
               updatedComponent = {
                 ...brk,
-                isClosed: !brk.isClosed,
-                status: !brk.isClosed ? 'normal' : 'warning',
+                isClosed: willBeClosed,
+                status: willBeClosed ? 'normal' : 'warning',
               };
             }
           } else if (component.type === 'source') {
+            soundEffects.playSwitchClick('toggle');
             const src = component as PowerSourceComponent;
             updatedComponent = {
               ...src,
@@ -569,6 +593,8 @@ export const useSchematicStore = create<SchematicStore>()(
           if (component.type !== 'switch' || component.switchType !== 'pushbutton') return;
           if (component.isPressed === isPressed) return;
 
+          soundEffects.playSwitchClick(isPressed ? 'push_down' : 'push_up');
+
           const nextNodes = currentNodes.map((n) => {
             if (n.id !== id) return n;
             return {
@@ -591,6 +617,7 @@ export const useSchematicStore = create<SchematicStore>()(
         },
 
         resetBreakers: () => {
+          soundEffects.playBreakerToggle('rearm');
           const nextNodes = get().nodes.map((n) => {
             if (n.data.type === 'breaker') {
               const brk = n.data as BreakerComponent;
@@ -618,6 +645,7 @@ export const useSchematicStore = create<SchematicStore>()(
         },
 
         testRcd: (id) => {
+          soundEffects.playBreakerTrip('Disparo diferencial por prueba de test de fuga (IΔn = 30mA)');
           const nextNodes = get().nodes.map((n) => {
             if (n.id !== id) return n;
             const brk = n.data as BreakerComponent;

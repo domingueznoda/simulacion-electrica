@@ -10,13 +10,14 @@ import {
 import { useSchematicStore } from '../../store/schematicStore';
 import { PRESET_CIRCUITS } from '../../engine/presets';
 import { buzzerAudio } from '../../utils/buzzerAudio';
+import { soundEffects } from '../../utils/soundEffects';
 
 interface NavbarProps {
   onOpenHelp: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(() => soundEffects.getMuted());
   const clearCanvas = useSchematicStore((s) => s.clearCanvas);
   const loadPreset = useSchematicStore((s) => s.loadPreset);
   const activePreset = useSchematicStore((s) => s.activePreset);
@@ -66,15 +67,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
 
         <button
           onClick={() => {
-            const nextMuted = buzzerAudio.toggleMute();
+            const nextMuted = soundEffects.toggleMute();
+            if (buzzerAudio.getMuted() !== nextMuted) {
+              buzzerAudio.toggleMute();
+            }
             setIsAudioMuted(nextMuted);
           }}
           className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer active:scale-95 ${
             isAudioMuted
               ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-              : 'text-rose-400 hover:text-rose-300 hover:bg-slate-800'
+              : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800'
           }`}
-          title={isAudioMuted ? 'Activar sonido del timbre' : 'Silenciar sonido del timbre'}
+          title={isAudioMuted ? 'Activar efectos de sonido (clic de interruptores, disparos y timbre)' : 'Silenciar efectos de sonido'}
         >
           {isAudioMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>

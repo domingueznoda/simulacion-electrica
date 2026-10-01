@@ -50,3 +50,49 @@
 .react-flow__attribution {
   display: none !important;
 }
+
+/* React Flow Controls con alto contraste y visibilidad */
+.react-flow__controls {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  border: 1.5px solid #475569 !important;
+  background: #090d16 !important;
+}
+
+.react-flow__controls-button {
+  background: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+  color: #f8fafc !important;
+  fill: #f8fafc !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #1e293b !important;
+}
+
+.react-flow__controls-button svg {
+  fill: #f8fafc !important;
+  color: #f8fafc !important;
+  stroke: #f8fafc !important;
+  width: 18px !important;
+  height: 18px !important;
+  transition: transform 0.15s ease, fill 0.15s ease !important;
+}
+
+.react-flow__controls-button:hover svg {
+  fill: #38bdf8 !important;
+  color: #38bdf8 !important;
+  stroke: #38bdf8 !important;
+  transform: scale(1.15) !important;
+}
