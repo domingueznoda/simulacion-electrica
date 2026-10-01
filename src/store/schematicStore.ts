@@ -72,10 +72,22 @@ function createDefaultTerminals(type: ComponentType, subType?: string): Terminal
   }
 
   if (type === 'load') {
-    return [
+    const isSocket = subType === 'socket';
+    const terminals: Terminal[] = [
       { id: 'term-load-l', name: 'Fase (L)', role: 'phase_in', polarity: 'L', isEnergized: false, potential: 0 },
       { id: 'term-load-n', name: 'Neutro (N)', role: 'neutral_in', polarity: 'N', isEnergized: false, potential: 0 },
     ];
+    if (isSocket) {
+      terminals.push({
+        id: 'term-load-pe',
+        name: 'Tierra (PE)',
+        role: 'ground',
+        polarity: 'PE',
+        isEnergized: false,
+        potential: 0,
+      });
+    }
+    return terminals;
   }
 
   if (type === 'junction') {
@@ -359,7 +371,7 @@ export const useSchematicStore = create<SchematicStore>()(
               currentDrawAmps: 0,
               isEnergized: false,
               status: 'normal',
-              terminals: createDefaultTerminals('load'),
+              terminals: createDefaultTerminals('load', lt),
             };
           }
 
@@ -724,7 +736,7 @@ export const useSchematicStore = create<SchematicStore>()(
       };
     },
     {
-      name: 'electrosim-schematic-storage-v4',
+      name: 'electrosim-schematic-storage-v7',
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,

@@ -172,6 +172,7 @@ function evaluateNetwork(
     if (node.data.type === 'load') {
       allTerminals.add(termKey(node.id, 'term-load-l'));
       allTerminals.add(termKey(node.id, 'term-load-n'));
+      allTerminals.add(termKey(node.id, 'term-load-pe'));
     }
     if (node.data.type === 'source') {
       allTerminals.add(termKey(node.id, 'term-src-l'));
@@ -473,6 +474,10 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     activeLoadIds.add(nodeId);
     const isSeries = info.pathLength > 1;
 
+    const kPE = termKey(nodeId, 'term-load-pe');
+    const netPE = finalEval.termToNetMap.get(kPE);
+    const hasGround = Boolean(netPE && netPE.hasGround);
+
     nodeStates.set(nodeId, {
       isOn: true,
       status: 'active',
@@ -480,6 +485,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
       isSeries,
       voltageDropVolts: info.voltage,
       currentDrawAmps: info.current,
+      hasGroundContact: hasGround,
     });
   }
 
@@ -506,11 +512,14 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     if (node.data.type === 'load' && !activeLoadIds.has(node.id)) {
       const kA = termKey(node.id, 'term-load-l');
       const kB = termKey(node.id, 'term-load-n');
+      const kPE = termKey(node.id, 'term-load-pe');
       const netA = finalEval.termToNetMap.get(kA);
       const netB = finalEval.termToNetMap.get(kB);
+      const netPE = finalEval.termToNetMap.get(kPE);
 
       const hasPhase = Boolean((netA && netA.hasPhase) || (netB && netB.hasPhase));
       const hasNeutral = Boolean((netA && netA.hasNeutral) || (netB && netB.hasNeutral));
+      const hasGround = Boolean(netPE && netPE.hasGround);
 
       const isEnergized = hasPhase;
       const status = hasPhase && !hasNeutral ? 'warning' : 'normal';
@@ -524,6 +533,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
         voltageDropVolts: 0,
         hasPhaseContact: hasPhase,
         hasNeutralContact: hasNeutral,
+        hasGroundContact: hasGround,
       });
 
       if (isEnergized) {

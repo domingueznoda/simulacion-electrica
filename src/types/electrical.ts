@@ -87,6 +87,7 @@ export interface LoadComponent extends ElectricalComponent {
   isSeries?: boolean;
   hasPhaseContact?: boolean;
   hasNeutralContact?: boolean;
+  hasGroundContact?: boolean;
 }
 
 export type JunctionType = 'wago_3' | 'wago_5' | 'terminal_strip';

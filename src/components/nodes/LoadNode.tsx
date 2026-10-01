@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Lightbulb, Plug, Bell, Fan, AlertTriangle } from 'lucide-react';
+import { Lightbulb, Plug, Bell, Fan, AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { LoadComponent } from '../../types/electrical';
 import { buzzerAudio } from '../../utils/buzzerAudio';
 import { useSchematicStore } from '../../store/schematicStore';
@@ -146,6 +146,23 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
       <div className="p-3 space-y-2">
         {renderVisualIcon()}
 
+        {data.loadType === 'socket' && (
+          <div className="flex items-center justify-between text-[10px] px-2 py-1 bg-slate-950/60 rounded border border-slate-800">
+            <span className="text-slate-400">Protección Tierra:</span>
+            {data.hasGroundContact ? (
+              <span className="text-emerald-400 font-semibold flex items-center gap-1 font-mono">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                PE Conectada (2P+T)
+              </span>
+            ) : (
+              <span className="text-amber-400/90 font-mono flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-400" />
+                Sin Tierra PE
+              </span>
+            )}
+          </div>
+        )}
+
         {data.hasPhaseContact && !data.hasNeutralContact && !data.isOn && (
           <div className="flex items-center gap-1.5 p-1.5 bg-amber-950/40 border border-amber-800/60 rounded text-[10px] text-amber-300">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -216,7 +233,7 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
           </div>
         </div>
 
-        <div className="space-y-2 pt-1 border-t border-slate-800">
+        <div className="space-y-1.5 pt-1 border-t border-slate-800">
           <div className="relative flex items-center justify-between text-[11px] bg-slate-950/50 px-2 py-1.5 rounded border border-slate-800">
             <Handle
               type="target"
@@ -245,6 +262,32 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
               className="!w-3 !h-3 !bg-sky-500 !border-2 !border-slate-900 !-right-1.5 opacity-0"
             />
           </div>
+
+          {data.loadType === 'socket' && (
+            <div className="relative flex items-center justify-between text-[11px] bg-emerald-950/20 px-2.5 py-1.5 rounded border border-emerald-800/50">
+              <span className="font-mono text-emerald-400 pl-1 flex items-center gap-1.5 font-semibold">
+                <span className={`w-2 h-2 rounded-full ${data.hasGroundContact ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]' : 'bg-slate-600'}`} />
+                Borne Tierra (PE)
+              </span>
+              <span className="font-mono text-emerald-300/80 pr-1 text-[10px]">Toma Inferior 2P+T</span>
+
+              {/* Exactamente UN solo borne físico de tierra por debajo */}
+              <Handle
+                type="target"
+                position={Position.Bottom}
+                id="term-load-pe"
+                style={{ left: '50%' }}
+                className="!w-4 !h-4 !bg-emerald-500 !border-2 !border-slate-900 !-bottom-2 hover:!scale-125 transition shadow-md"
+              />
+              <Handle
+                type="source"
+                position={Position.Bottom}
+                id="term-load-pe"
+                style={{ left: '50%' }}
+                className="!w-4 !h-4 !bg-emerald-500 !border-2 !border-slate-900 !-bottom-2 opacity-0"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

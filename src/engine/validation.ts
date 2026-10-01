@@ -168,6 +168,24 @@ export function validateElectricalSchematic(
         suggestedFix: 'Conecta la Fase (L) a través de los interruptores o directamente a la protección.',
       });
     }
+
+    if (load.loadType === 'socket') {
+      const hasPEConnection = lEdges.some(
+        (e) => e.sourceHandle === 'term-load-pe' || e.targetHandle === 'term-load-pe'
+      );
+      if (!hasPEConnection) {
+        errors.push({
+          id: `val-missing-ground-${lNode.id}`,
+          code: 'EARTH_FAULT',
+          severity: 'warning',
+          title: `Toma sin toma de tierra (${load.name})`,
+          message: 'Según REBT ITC-BT-19 e ITC-BT-25, todas las tomas de corriente Schuko deben disponer de conexión al conductor de protección (Tierra PE).',
+          nodeIds: [lNode.id],
+          edgeIds: [],
+          suggestedFix: 'Conecta el borne PE de la toma al conductor de protección de tierra (amarillo-verde).',
+        });
+      }
+    }
   }
 
   const twoWaySwitches = switchNodes.filter(
@@ -185,6 +203,32 @@ export function validateElectricalSchematic(
       edgeIds: [],
       suggestedFix: 'Añade un segundo conmutador y une los bornes viajeros (L1-L1 y L2-L2).',
     });
+  }
+
+  for (const sNode of twoWaySwitches) {
+    const sEdges = edges.filter((e) => e.source === sNode.id || e.target === sNode.id);
+    const hasPhaseAtTraveler = sEdges.some((e) => {
+      const handle = e.source === sNode.id ? e.sourceHandle : e.targetHandle;
+      const otherNodeId = e.source === sNode.id ? e.target : e.source;
+      const otherNode = nodes.find((n) => n.id === otherNodeId);
+      const isTraveler = handle === 'term-sw-l1' || handle === 'term-sw-l2';
+      const isSourceOrBreaker =
+        otherNode && (otherNode.data.type === 'breaker' || otherNode.data.type === 'source');
+      return isTraveler && isSourceOrBreaker;
+    });
+
+    if (hasPhaseAtTraveler) {
+      errors.push({
+        id: `val-miswired-tw-${sNode.id}`,
+        code: 'INCOMPATIBLE_POLARITY',
+        severity: 'error',
+        title: `Error de conexionado en conmutada (${(sNode.data as SwitchComponent).name})`,
+        message: 'La Fase de alimentación está conectada directamente a un borne viajero (L1/L2) en lugar de al borne Común (COM). El circuito quedará bloqueado cuando este conmutador bascule a la otra posición.',
+        nodeIds: [sNode.id],
+        edgeIds: sEdges.map((e) => e.id),
+        suggestedFix: 'Desconecta la Fase del borne viajero y conéctala al borne Común (COM) del conmutador.',
+      });
+    }
   }
 
   return errors;

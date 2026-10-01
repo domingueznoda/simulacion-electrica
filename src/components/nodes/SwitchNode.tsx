@@ -195,67 +195,73 @@ export const SwitchNode: React.FC<{ id: string; data: SwitchComponent; selected:
         </div>
 
         <div className="space-y-1.5">
-          <div className="relative flex items-center justify-between text-[11px] bg-slate-950/70 px-2 py-1 rounded-lg border border-slate-800">
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="term-sw-com"
-              className="!w-3.5 !h-3.5 !bg-amber-600 !border-2 !border-slate-900 !-left-2 hover:!scale-125 transition"
-            />
-            <span className="font-mono text-amber-400 pl-2">COM (Común)</span>
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="term-sw-com"
-              className="!w-3.5 !h-3.5 !bg-amber-600 !border-2 !border-slate-900 !-right-2 hover:!scale-125 transition"
-            />
-          </div>
-
-          <div className="relative flex items-center justify-between text-[11px] bg-slate-950/70 px-2 py-1 rounded-lg border border-slate-800">
+          <div className="relative flex items-center justify-between text-[11px] bg-slate-950/70 px-2.5 py-2 rounded-lg border border-slate-800">
             <Handle
               type="target"
               position={Position.Left}
               id="term-sw-l1"
-              className={`!w-3.5 !h-3.5 !border-2 !border-slate-900 !-left-2 hover:!scale-125 transition ${
-                isPos1 ? '!bg-indigo-400' : '!bg-slate-600'
+              className={`!w-4 !h-4 !border-2 !border-slate-900 !-left-2 hover:!scale-125 transition shadow-md ${
+                isPos1 ? '!bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.9)]' : '!bg-slate-600'
               }`}
             />
-            <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded transition ${
-              isPos1 ? 'bg-indigo-500/30 text-indigo-300 font-bold' : 'text-slate-500'
+            <Handle
+              type="source"
+              position={Position.Left}
+              id="term-sw-l1"
+              className="!w-4 !h-4 !-left-2 opacity-0"
+            />
+
+            <span className={`font-mono text-xs pl-2 font-bold flex items-center gap-1.5 ${
+              isPos1 ? 'text-indigo-300' : 'text-slate-400'
             }`}>
-              L1 (Viajero 1)
+              <span className={`w-2 h-2 rounded-full ${isPos1 ? 'bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.8)]' : 'bg-slate-600'}`} />
+              Borne L1 (Izq)
             </span>
+
+            <span className={`font-mono text-xs pr-2 font-bold flex items-center gap-1.5 ${
+              !isPos1 ? 'text-indigo-300' : 'text-slate-400'
+            }`}>
+              Borne L2 (Der)
+              <span className={`w-2 h-2 rounded-full ${!isPos1 ? 'bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.8)]' : 'bg-slate-600'}`} />
+            </span>
+
             <Handle
               type="source"
               position={Position.Right}
-              id="term-sw-l1"
-              className={`!w-3.5 !h-3.5 !border-2 !border-slate-900 !-right-2 hover:!scale-125 transition ${
-                isPos1 ? '!bg-indigo-400' : '!bg-slate-600'
+              id="term-sw-l2"
+              className={`!w-4 !h-4 !border-2 !border-slate-900 !-right-2 hover:!scale-125 transition shadow-md ${
+                !isPos1 ? '!bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.9)]' : '!bg-slate-600'
               }`}
+            />
+            <Handle
+              type="target"
+              position={Position.Right}
+              id="term-sw-l2"
+              className="!w-4 !h-4 !-right-2 opacity-0"
             />
           </div>
 
-          <div className="relative flex items-center justify-between text-[11px] bg-slate-950/70 px-2 py-1 rounded-lg border border-slate-800">
+          <div className="relative flex items-center justify-between text-[11px] bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-amber-800/50 mt-1">
+            <span className="font-mono text-amber-400 pl-1 flex items-center gap-1.5 font-semibold text-xs">
+              <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]" />
+              Borne Común (COM)
+            </span>
+            <span className="text-[10px] text-amber-300/80 font-mono pr-1">Fase / Vuelta (Inferior)</span>
+
+            {/* Exactamente UN solo borne físico de Común por debajo */}
             <Handle
               type="target"
-              position={Position.Left}
-              id="term-sw-l2"
-              className={`!w-3.5 !h-3.5 !border-2 !border-slate-900 !-left-2 hover:!scale-125 transition ${
-                !isPos1 ? '!bg-indigo-400' : '!bg-slate-600'
-              }`}
+              position={Position.Bottom}
+              id="term-sw-com"
+              style={{ left: '50%' }}
+              className="!w-4 !h-4 !bg-amber-500 !border-2 !border-slate-900 !-bottom-2 hover:!scale-125 transition shadow-md"
             />
-            <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded transition ${
-              !isPos1 ? 'bg-indigo-500/30 text-indigo-300 font-bold' : 'text-slate-500'
-            }`}>
-              L2 (Viajero 2)
-            </span>
             <Handle
               type="source"
-              position={Position.Right}
-              id="term-sw-l2"
-              className={`!w-3.5 !h-3.5 !border-2 !border-slate-900 !-right-2 hover:!scale-125 transition ${
-                !isPos1 ? '!bg-indigo-400' : '!bg-slate-600'
-              }`}
+              position={Position.Bottom}
+              id="term-sw-com"
+              style={{ left: '50%' }}
+              className="!w-4 !h-4 !bg-amber-500 !border-2 !border-slate-900 !-bottom-2 opacity-0"
             />
           </div>
         </div>
