@@ -1,9 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   BackgroundVariant,
+  ReactFlowProvider,
+  useReactFlow,
   type Connection,
   type Node,
   type Edge,
@@ -23,17 +25,29 @@ interface SchematicCanvasProps {
   onOpenPalette: () => void;
 }
 
-export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
+const SchematicCanvasInner: React.FC<SchematicCanvasProps> = ({
   isPaletteOpen,
   onOpenPalette,
 }) => {
   const nodes = useSchematicStore((s) => s.nodes);
   const edges = useSchematicStore((s) => s.edges);
+  const activePreset = useSchematicStore((s) => s.activePreset);
   const onNodesChange = useSchematicStore((s) => s.onNodesChange);
   const onEdgesChange = useSchematicStore((s) => s.onEdgesChange);
   const connectNodes = useSchematicStore((s) => s.connectNodes);
   const setSelectedNodeId = useSchematicStore((s) => s.setSelectedNodeId);
   const setSelectedEdgeId = useSchematicStore((s) => s.setSelectedEdgeId);
+
+  const { fitView } = useReactFlow();
+
+  // Ajuste automático suave de la cámara a vista de pájaro cuando se abre o cambia la plantilla
+  useEffect(() => {
+    if (nodes.length === 0) return;
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.12, duration: 450 });
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [activePreset, fitView]);
 
   const nodeTypes = useMemo(
     () => ({
@@ -105,8 +119,9 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        minZoom={0.2}
-        maxZoom={2.0}
+        fitViewOptions={{ padding: 0.12, minZoom: 0.05, maxZoom: 1.0 }}
+        minZoom={0.05}
+        maxZoom={2.5}
         defaultEdgeOptions={{
           type: 'electricalEdge',
         }}
@@ -121,5 +136,13 @@ export const SchematicCanvas: React.FC<SchematicCanvasProps> = ({
         <Controls className="!bg-slate-900 !border-slate-700 rounded-xl shadow-2xl overflow-hidden" />
       </ReactFlow>
     </div>
+  );
+};
+
+export const SchematicCanvas: React.FC<SchematicCanvasProps> = (props) => {
+  return (
+    <ReactFlowProvider>
+      <SchematicCanvasInner {...props} />
+    </ReactFlowProvider>
   );
 };

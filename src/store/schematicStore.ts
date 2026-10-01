@@ -724,7 +724,7 @@ export const useSchematicStore = create<SchematicStore>()(
       };
     },
     {
-      name: 'electrosim-schematic-storage-v3',
+      name: 'electrosim-schematic-storage-v4',
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,

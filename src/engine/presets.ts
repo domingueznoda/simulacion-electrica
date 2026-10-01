@@ -19,7 +19,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-src-fh',
         type: 'sourceNode',
-        position: { x: 40, y: 450 },
+        position: { x: 80, y: 700},
         data: {
           id: 'node-src-fh',
           name: 'Alimentación Red 230V',
@@ -40,7 +40,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-iga-fh',
         type: 'breakerNode',
-        position: { x: 280, y: 450 },
+        position: { x: 480, y: 700},
         data: {
           id: 'node-iga-fh',
           name: 'IGA 40A General',
@@ -64,7 +64,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-pcs-fh',
         type: 'breakerNode',
-        position: { x: 520, y: 450 },
+        position: { x: 880, y: 700},
         data: {
           id: 'node-pcs-fh',
           name: 'PCS Sobretensiones',
@@ -88,7 +88,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-rcd-fh',
         type: 'breakerNode',
-        position: { x: 760, y: 450 },
+        position: { x: 1280, y: 700},
         data: {
           id: 'node-rcd-fh',
           name: 'Diferencial ID 40A 30mA',
@@ -113,7 +113,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-c1',
         type: 'breakerNode',
-        position: { x: 1040, y: 100 },
+        position: { x: 1750, y: 180},
         data: {
           id: 'node-brk-c1',
           name: 'PIA C1 10A (Alumbrado)',
@@ -137,7 +137,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-c2',
         type: 'breakerNode',
-        position: { x: 1040, y: 600 },
+        position: { x: 1750, y: 700},
         data: {
           id: 'node-brk-c2',
           name: 'PIA C2 16A (Tomas Uso Gral)',
@@ -161,7 +161,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-c3',
         type: 'breakerNode',
-        position: { x: 1040, y: 920 },
+        position: { x: 1750, y: 1050},
         data: {
           id: 'node-brk-c3',
           name: 'PIA C3 25A (Cocina/Horno)',
@@ -185,7 +185,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-c4',
         type: 'breakerNode',
-        position: { x: 1040, y: 1140 },
+        position: { x: 1750, y: 1350},
         data: {
           id: 'node-brk-c4',
           name: 'PIA C4 20A (Lavadora/Termo)',
@@ -209,7 +209,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-c5',
         type: 'breakerNode',
-        position: { x: 1040, y: 1360 },
+        position: { x: 1750, y: 1650},
         data: {
           id: 'node-brk-c5',
           name: 'PIA C5 16A (Baño y Cocina Aux)',
@@ -233,7 +233,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw-bath',
         type: 'switchNode',
-        position: { x: 1360, y: -120 },
+        position: { x: 2250, y: -40},
         data: {
           id: 'node-sw-bath',
           name: 'Interruptor Baño',
@@ -252,7 +252,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-bath',
         type: 'loadNode',
-        position: { x: 1620, y: -120 },
+        position: { x: 2750, y: -40},
         data: {
           id: 'node-lamp-bath',
           name: 'Lámpara LED Baño 15W',
@@ -273,7 +273,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw1-q1',
         type: 'switchNode',
-        position: { x: 1360, y: 60 },
+        position: { x: 2250, y: 140},
         data: {
           id: 'node-sw1-q1',
           name: 'Conmutador Q1 Puerta',
@@ -293,7 +293,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-cr-q1',
         type: 'switchNode',
-        position: { x: 1620, y: 60 },
+        position: { x: 2750, y: 140},
         data: {
           id: 'node-cr-q1',
           name: 'Cruzamiento Q1 Cabecero',
@@ -314,7 +314,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw2-q1',
         type: 'switchNode',
-        position: { x: 1880, y: 60 },
+        position: { x: 3250, y: 140},
         data: {
           id: 'node-sw2-q1',
           name: 'Conmutador Q1 Mesita',
@@ -334,7 +334,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-q1',
         type: 'loadNode',
-        position: { x: 2140, y: 60 },
+        position: { x: 3750, y: 140},
         data: {
           id: 'node-lamp-q1',
           name: 'Lámpara Cuarto 1 (40W)',
@@ -355,7 +355,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw1-q2',
         type: 'switchNode',
-        position: { x: 1360, y: 240 },
+        position: { x: 2250, y: 320},
         data: {
           id: 'node-sw1-q2',
           name: 'Conmutador Q2 Puerta',
@@ -375,7 +375,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-cr-q2',
         type: 'switchNode',
-        position: { x: 1620, y: 240 },
+        position: { x: 2750, y: 320},
         data: {
           id: 'node-cr-q2',
           name: 'Cruzamiento Q2 Intermedio',
@@ -396,7 +396,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw2-q2',
         type: 'switchNode',
-        position: { x: 1880, y: 240 },
+        position: { x: 3250, y: 320},
         data: {
           id: 'node-sw2-q2',
           name: 'Conmutador Q2 Cama',
@@ -416,7 +416,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-q2',
         type: 'loadNode',
-        position: { x: 2140, y: 240 },
+        position: { x: 3750, y: 320},
         data: {
           id: 'node-lamp-q2',
           name: 'Lámpara Cuarto 2 (40W)',
@@ -437,7 +437,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw-living',
         type: 'switchNode',
-        position: { x: 2420, y: 60 },
+        position: { x: 2250, y: 500},
         data: {
           id: 'node-sw-living',
           name: 'Interruptor Salón',
@@ -456,7 +456,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-living',
         type: 'loadNode',
-        position: { x: 2680, y: 60 },
+        position: { x: 2750, y: 500},
         data: {
           id: 'node-lamp-living',
           name: 'Lámpara LED Salón (60W)',
@@ -477,7 +477,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw-kitchen',
         type: 'switchNode',
-        position: { x: 2420, y: 240 },
+        position: { x: 3250, y: 500},
         data: {
           id: 'node-sw-kitchen',
           name: 'Interruptor Cocina',
@@ -496,7 +496,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-kitchen',
         type: 'loadNode',
-        position: { x: 2680, y: 240 },
+        position: { x: 3750, y: 500},
         data: {
           id: 'node-lamp-kitchen',
           name: 'Lámpara LED Cocina (30W)',
@@ -517,7 +517,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-living',
         type: 'loadNode',
-        position: { x: 1360, y: 600 },
+        position: { x: 2250, y: 700},
         data: {
           id: 'node-sock-living',
           name: 'Toma Salón TV (300W)',
@@ -538,7 +538,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-q1',
         type: 'loadNode',
-        position: { x: 1680, y: 600 },
+        position: { x: 2750, y: 700},
         data: {
           id: 'node-sock-q1',
           name: 'Toma Mesita Cuarto 1 (150W)',
@@ -559,7 +559,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-q2',
         type: 'loadNode',
-        position: { x: 2000, y: 600 },
+        position: { x: 3250, y: 700},
         data: {
           id: 'node-sock-q2',
           name: 'Toma Escritorio Cuarto 2 (150W)',
@@ -580,7 +580,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-c3',
         type: 'loadNode',
-        position: { x: 1360, y: 920 },
+        position: { x: 2250, y: 1050},
         data: {
           id: 'node-sock-c3',
           name: 'Toma Horno / Placa (3000W)',
@@ -601,7 +601,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-c4',
         type: 'loadNode',
-        position: { x: 1360, y: 1140 },
+        position: { x: 2250, y: 1350},
         data: {
           id: 'node-sock-c4',
           name: 'Toma Lavadora / Termo (2000W)',
@@ -622,7 +622,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-bath',
         type: 'loadNode',
-        position: { x: 1360, y: 1360 },
+        position: { x: 2250, y: 1650},
         data: {
           id: 'node-sock-bath',
           name: 'Toma Baño Lavabo (1200W)',
@@ -643,7 +643,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sock-kitchen-aux',
         type: 'loadNode',
-        position: { x: 1680, y: 1360 },
+        position: { x: 2750, y: 1650},
         data: {
           id: 'node-sock-kitchen-aux',
           name: 'Toma Encimera Cocina (800W)',
@@ -1151,7 +1151,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-source-1',
         type: 'sourceNode',
-        position: { x: 50, y: 180 },
+        position: { x: 100, y: 240},
         data: {
           id: 'node-source-1',
           name: 'Alimentación Red',
@@ -1172,7 +1172,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-breaker-1',
         type: 'breakerNode',
-        position: { x: 300, y: 170 },
+        position: { x: 500, y: 240},
         data: {
           id: 'node-breaker-1',
           name: 'PIA 10A Alumbrado',
@@ -1196,7 +1196,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-switch-1',
         type: 'switchNode',
-        position: { x: 550, y: 130 },
+        position: { x: 960, y: 240},
         data: {
           id: 'node-switch-1',
           name: 'Interruptor S1',
@@ -1215,7 +1215,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-1',
         type: 'loadNode',
-        position: { x: 800, y: 180 },
+        position: { x: 1440, y: 240},
         data: {
           id: 'node-lamp-1',
           name: 'Lámpara LED 15W',
@@ -1292,7 +1292,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-src-tw',
         type: 'sourceNode',
-        position: { x: 40, y: 220 },
+        position: { x: 100, y: 240},
         data: {
           id: 'node-src-tw',
           name: 'Alimentación Red',
@@ -1313,7 +1313,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-tw',
         type: 'breakerNode',
-        position: { x: 260, y: 210 },
+        position: { x: 500, y: 240},
         data: {
           id: 'node-brk-tw',
           name: 'PIA 10A Iluminación',
@@ -1337,7 +1337,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw1-tw',
         type: 'switchNode',
-        position: { x: 490, y: 160 },
+        position: { x: 960, y: 240},
         data: {
           id: 'node-sw1-tw',
           name: 'Conmutador Q1',
@@ -1357,7 +1357,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw2-tw',
         type: 'switchNode',
-        position: { x: 740, y: 160 },
+        position: { x: 1480, y: 240},
         data: {
           id: 'node-sw2-tw',
           name: 'Conmutador Q2',
@@ -1377,7 +1377,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-tw',
         type: 'loadNode',
-        position: { x: 990, y: 220 },
+        position: { x: 2000, y: 240},
         data: {
           id: 'node-lamp-tw',
           name: 'Punto de Luz Central',
@@ -1472,7 +1472,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-src-cr',
         type: 'sourceNode',
-        position: { x: 30, y: 220 },
+        position: { x: 100, y: 240},
         data: {
           id: 'node-src-cr',
           name: 'Alimentación Red',
@@ -1493,7 +1493,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-cr',
         type: 'breakerNode',
-        position: { x: 230, y: 210 },
+        position: { x: 500, y: 240},
         data: {
           id: 'node-brk-cr',
           name: 'PIA 10A Iluminación',
@@ -1517,7 +1517,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw1-cr',
         type: 'switchNode',
-        position: { x: 440, y: 160 },
+        position: { x: 960, y: 240},
         data: {
           id: 'node-sw1-cr',
           name: 'Conmutador Q1',
@@ -1537,7 +1537,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-cross-1',
         type: 'switchNode',
-        position: { x: 670, y: 160 },
+        position: { x: 1480, y: 240},
         data: {
           id: 'node-cross-1',
           name: 'Cruzamiento QX',
@@ -1558,7 +1558,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-sw2-cr',
         type: 'switchNode',
-        position: { x: 910, y: 160 },
+        position: { x: 2000, y: 240},
         data: {
           id: 'node-sw2-cr',
           name: 'Conmutador Q2',
@@ -1578,7 +1578,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-lamp-cr',
         type: 'loadNode',
-        position: { x: 1140, y: 220 },
+        position: { x: 2520, y: 240},
         data: {
           id: 'node-lamp-cr',
           name: 'Lámpara Techo',
@@ -1691,7 +1691,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-src-short',
         type: 'sourceNode',
-        position: { x: 50, y: 180 },
+        position: { x: 120, y: 240},
         data: {
           id: 'node-src-short',
           name: 'Alimentación Red',
@@ -1712,7 +1712,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-brk-short',
         type: 'breakerNode',
-        position: { x: 300, y: 170 },
+        position: { x: 560, y: 240},
         data: {
           id: 'node-brk-short',
           name: 'PIA 25A (Sobredimensionado)',
@@ -1736,7 +1736,7 @@ export const PRESET_CIRCUITS: Record<string, SchematicPreset> = {
       {
         id: 'node-switch-short',
         type: 'switchNode',
-        position: { x: 560, y: 170 },
+        position: { x: 1060, y: 240},
         data: {
           id: 'node-switch-short',
           name: 'Interruptor de Prueba',
