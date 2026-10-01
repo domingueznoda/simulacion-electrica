@@ -174,7 +174,7 @@ function evaluateGraphState(nodes: AppNode[], edges: AppEdge[]) {
 export const useSchematicStore = create<SchematicStore>()(
   persist(
     (set, get) => {
-      const initialPreset = PRESET_CIRCUITS.full_house_rebt || PRESET_CIRCUITS.simple_light;
+      const initialPreset = PRESET_CIRCUITS.simple_light;
       const initialEval = evaluateGraphState(initialPreset.nodes, initialPreset.edges);
 
       return {
@@ -185,7 +185,7 @@ export const useSchematicStore = create<SchematicStore>()(
         validationErrors: initialEval.validationErrors,
         isSimulating: true,
         hasShortCircuit: initialEval.hasShortCircuit,
-        activePreset: 'full_house_rebt',
+        activePreset: 'simple_light',
 
         setNodes: (nodes) => {
           const evalState = evaluateGraphState(nodes, get().edges);
@@ -736,7 +736,7 @@ export const useSchematicStore = create<SchematicStore>()(
       };
     },
     {
-      name: 'electrosim-schematic-storage-v7',
+      name: 'electrosim-schematic-storage-v8',
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,

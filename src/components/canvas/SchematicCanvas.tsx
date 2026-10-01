@@ -19,6 +19,7 @@ import { SwitchNode } from '../nodes/SwitchNode';
 import { LoadNode } from '../nodes/LoadNode';
 import { JunctionNode } from '../nodes/JunctionNode';
 import { ElectricalEdge } from '../edges/ElectricalEdge';
+import { PdfExportButton } from './PdfExportButton';
 
 interface SchematicCanvasProps {
   isPaletteOpen: boolean;
@@ -106,6 +107,9 @@ const SchematicCanvasInner: React.FC<SchematicCanvasProps> = ({
           <span>Añadir Elemento</span>
         </button>
       )}
+
+      {/* Botón de exportación a PDF (Unifilar y Multifilar) en el lado derecho opuesto */}
+      <PdfExportButton />
 
       <ReactFlow<AppNode, AppEdge>
         nodes={nodes}
