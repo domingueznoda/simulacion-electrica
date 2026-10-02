@@ -14,6 +14,7 @@ import type {
   BreakerComponent,
   CableData,
   ComponentType,
+  LoadComponent,
   PowerSourceComponent,
   SchematicStore,
   SwitchComponent,
@@ -448,7 +449,42 @@ export const useSchematicStore = create<SchematicStore>()(
           if (exists) return;
 
           const wireType = determineWireType(sourceHandle, targetHandle);
-          const defaultSection = wireType === 'phase' || wireType === 'switched_phase' ? 1.5 : 1.5;
+
+          const sourceNode = get().nodes.find((n) => n.id === sourceId);
+          const targetNode = get().nodes.find((n) => n.id === targetId);
+
+          const isSocket =
+            (sourceNode?.data.type === 'load' && (sourceNode.data as LoadComponent).loadType === 'socket') ||
+            (targetNode?.data.type === 'load' && (targetNode.data as LoadComponent).loadType === 'socket') ||
+            (sourceNode?.data.name?.toLowerCase().includes('toma') ?? false) ||
+            (targetNode?.data.name?.toLowerCase().includes('toma') ?? false) ||
+            (sourceNode?.data.name?.toLowerCase().includes('schuko') ?? false) ||
+            (targetNode?.data.name?.toLowerCase().includes('schuko') ?? false);
+
+          const sourcePower = sourceNode?.data.type === 'load' ? (sourceNode.data as LoadComponent).ratedPowerWatts : 0;
+          const targetPower = targetNode?.data.type === 'load' ? (targetNode.data as LoadComponent).ratedPowerWatts : 0;
+          const maxPower = Math.max(sourcePower || 0, targetPower || 0);
+
+          const sourceBreaker = sourceNode?.data.type === 'breaker' ? (sourceNode.data as BreakerComponent).ratedCurrent : 0;
+          const targetBreaker = targetNode?.data.type === 'breaker' ? (targetNode.data as BreakerComponent).ratedCurrent : 0;
+          const maxBreakerAmps = Math.max(sourceBreaker || 0, targetBreaker || 0);
+
+          let defaultSection = 1.5;
+          let maxAllowedCurrentAmps = 10;
+
+          if (isSocket || maxBreakerAmps >= 16) {
+            if (maxPower >= 2500 || maxBreakerAmps >= 25) {
+              defaultSection = 6.0;
+              maxAllowedCurrentAmps = 25;
+            } else if (maxPower >= 2000 || maxBreakerAmps >= 20) {
+              defaultSection = 4.0;
+              maxAllowedCurrentAmps = 20;
+            } else {
+              // ITC-BT-25: Circuito de tomas exige mínimo obligatorio 2.5 mm²
+              defaultSection = 2.5;
+              maxAllowedCurrentAmps = 16;
+            }
+          }
 
           const newEdge: AppEdge = {
             id: `cable-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
@@ -460,7 +496,7 @@ export const useSchematicStore = create<SchematicStore>()(
             data: {
               wireType,
               crossSectionMm2: defaultSection,
-              maxAllowedCurrentAmps: 16,
+              maxAllowedCurrentAmps,
               hasCurrent: false,
               isEnergized: false,
               isShortCircuited: false,

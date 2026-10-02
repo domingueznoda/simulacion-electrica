@@ -11,11 +11,20 @@ import type {
 } from '../types/electrical';
 
 const MAX_AMPACITY_BY_SECTION: Record<number, number> = {
-  1.5: 16,
-  2.5: 20,
-  4.0: 25,
-  6.0: 32,
-  10.0: 50,
+  1.5: 10, // ITC-BT-25 (C1 Alumbrado): Calibre máximo admisible de PIA 10A
+  2.5: 16, // ITC-BT-25 (C2 Tomas / C5): Calibre máximo admisible de PIA 16A
+  4.0: 20, // ITC-BT-25 (C4 Lavadora/Termo): Calibre máximo admisible de PIA 20A
+  6.0: 25, // ITC-BT-25 (C3 Cocina/Horno): Calibre máximo admisible de PIA 25A
+  10.0: 40, // Derivación individual / IGA: Calibre máximo admisible de PIA 40A
+  16.0: 63,
+};
+
+const MAX_BREAKER_BY_SECTION: Record<number, number> = {
+  1.5: 10,
+  2.5: 16,
+  4.0: 20,
+  6.0: 25,
+  10.0: 40,
   16.0: 63,
 };
 
@@ -80,17 +89,18 @@ export function validateElectricalSchematic(
       const cable = edge.data as CableData;
       if (!cable) continue;
 
-      const maxSafeCurrent = MAX_AMPACITY_BY_SECTION[cable.crossSectionMm2] || 16;
-      if (breaker.ratedCurrent > maxSafeCurrent) {
+      const maxSafeBreaker = MAX_BREAKER_BY_SECTION[cable.crossSectionMm2] || 10;
+      if (breaker.ratedCurrent > maxSafeBreaker) {
+        const recommendedSection = getRecommendedSection(breaker.ratedCurrent);
         errors.push({
           id: `val-cable-undersized-${edge.id}`,
           code: 'UNDERSIZED_CABLE',
           severity: 'error',
-          title: 'Sección de cable insuficiente para la protección',
-          message: `Cable de ${cable.crossSectionMm2} mm² conectado a magnetotérmico de ${breaker.ratedCurrent}A. La intensidad admisible del cable es de solo ${maxSafeCurrent}A.`,
+          title: `Calibre de protección excesivo para cable de ${cable.crossSectionMm2} mm²`,
+          message: `Cable de ${cable.crossSectionMm2} mm² conectado a magnetotérmico de ${breaker.ratedCurrent}A. Según REBT ITC-BT-25, la sección de ${cable.crossSectionMm2} mm² solo puede protegerse con un PIA de calibre ≤ ${maxSafeBreaker}A${cable.crossSectionMm2 <= 1.5 ? ' (exclusivo para alumbrado C1)' : ''}. Para un magnetotérmico de ${breaker.ratedCurrent}A se exige una sección mínima de ${recommendedSection} mm².`,
           nodeIds: [bNode.id],
           edgeIds: [edge.id],
-          suggestedFix: `Aumenta la sección del conductor a mínimo ${getRecommendedSection(breaker.ratedCurrent)} mm² o reduce el calibre del magnetotérmico a ≤ ${maxSafeCurrent}A.`,
+          suggestedFix: `Aumenta la sección del conductor a mínimo ${recommendedSection} mm² en las propiedades del cable o reduce el calibre del magnetotérmico a ≤ ${maxSafeBreaker}A.`,
         });
       }
     }
@@ -170,6 +180,16 @@ export function validateElectricalSchematic(
     }
 
     if (load.loadType === 'socket') {
+      const isOvenCooktop = load.ratedPowerWatts >= 2500;
+      const isWashingMachine = load.ratedPowerWatts >= 2000 && load.ratedPowerWatts < 2500;
+      const minRequiredSection = isOvenCooktop ? 6.0 : isWashingMachine ? 4.0 : 2.5;
+      const circuitCode = isOvenCooktop
+        ? 'C3 (Cocina/Horno - 25A)'
+        : isWashingMachine
+        ? 'C4 (Lavadora/Termo - 20A)'
+        : 'C2/C5 (Tomas de uso general - 16A)';
+
+      // 1. Verificación obligatoria de Toma de Tierra PE (ITC-BT-19)
       const hasPEConnection = lEdges.some(
         (e) => e.sourceHandle === 'term-load-pe' || e.targetHandle === 'term-load-pe'
       );
@@ -184,6 +204,68 @@ export function validateElectricalSchematic(
           edgeIds: [],
           suggestedFix: 'Conecta el borne PE de la toma al conductor de protección de tierra (amarillo-verde).',
         });
+      }
+
+      // 2. Validación de sección mínima de conductores en circuito de tomas (REBT ITC-BT-25 Tabla 1)
+      const socketEdges = edges.filter((e) => e.source === lNode.id || e.target === lNode.id);
+      for (const edge of socketEdges) {
+        const cable = edge.data as CableData;
+        if (!cable) continue;
+
+        if (cable.crossSectionMm2 < minRequiredSection) {
+          const isLightingCable = cable.crossSectionMm2 <= 1.5;
+          errors.push({
+            id: `val-socket-undersized-${edge.id}`,
+            code: 'UNDERSIZED_CABLE',
+            severity: 'error',
+            title: `Sección antirreglamentaria en toma (${load.name})`,
+            message: isLightingCable
+              ? `Cable de ${cable.crossSectionMm2} mm² conectado a toma de corriente. Según REBT ITC-BT-25 (Tabla 1) e ITC-BT-19, el conductor de 1.5 mm² es de uso exclusivo para alumbrado (C1). Las tomas de corriente generales exigen una sección mínima obligatoria de ${minRequiredSection} mm² (${circuitCode}).`
+              : `Cable de ${cable.crossSectionMm2} mm² insuficiente para la toma (${load.ratedPowerWatts}W). Según REBT ITC-BT-25, el circuito ${circuitCode} exige una sección mínima obligatoria de ${minRequiredSection} mm².`,
+            nodeIds: [lNode.id],
+            edgeIds: [edge.id],
+            suggestedFix: `Aumenta la sección del conductor a mínimo ${minRequiredSection} mm² en las propiedades del cable.`,
+          });
+        }
+
+        // 3. Verificación de protección aguas arriba para la toma (REBT ITC-BT-25)
+        const otherNodeId = edge.source === lNode.id ? edge.target : edge.source;
+        const otherNode = nodes.find((n) => n.id === otherNodeId);
+        if (otherNode && otherNode.data.type === 'breaker') {
+          const brk = otherNode.data as BreakerComponent;
+          if (brk.breakerType === 'circuit_breaker' && brk.ratedCurrent < 16) {
+            errors.push({
+              id: `val-socket-breaker-undersized-${otherNode.id}-${lNode.id}`,
+              code: 'UNDERSIZED_CABLE',
+              severity: 'error',
+              title: `Protección antirreglamentaria para tomas (${brk.name})`,
+              message: `La toma está conectada a un magnetotérmico de ${brk.ratedCurrent}A. Según REBT ITC-BT-25, las tomas de corriente generales corresponden al circuito C2 y deben protegerse con un PIA de 16A y cable de 2.5 mm². Un PIA de 10A es de uso exclusivo para alumbrado (C1).`,
+              nodeIds: [otherNode.id, lNode.id],
+              edgeIds: [edge.id],
+              suggestedFix: 'Sustituye la protección por un PIA de 16A (C2) y cableado de 2.5 mm².',
+            });
+          }
+
+          // Verificar cables que alimentan dicho magnetotérmico desde la red
+          const upstreamEdges = edges.filter(
+            (e) => (e.source === otherNode.id || e.target === otherNode.id) && e.id !== edge.id
+          );
+          for (const upEdge of upstreamEdges) {
+            const upCable = upEdge.data as CableData;
+            if (upCable && upCable.crossSectionMm2 < minRequiredSection) {
+              errors.push({
+                id: `val-socket-upstream-undersized-${upEdge.id}`,
+                code: 'UNDERSIZED_CABLE',
+                severity: 'error',
+                title: `Alimentación aguas arriba insuficiente para tomas (${load.name})`,
+                message: `El cable que alimenta la protección tiene una sección de ${upCable.crossSectionMm2} mm². Según REBT ITC-BT-25, todo el circuito de tomas exige una sección mínima continua de ${minRequiredSection} mm². El conductor de 1.5 mm² solo debe usarse para luz.`,
+                nodeIds: [otherNode.id, lNode.id],
+                edgeIds: [upEdge.id],
+                suggestedFix: `Aumenta la sección del conductor a mínimo ${minRequiredSection} mm².`,
+              });
+            }
+          }
+        }
       }
     }
   }
@@ -234,11 +316,11 @@ export function validateElectricalSchematic(
   return errors;
 }
 
-function getRecommendedSection(breakerAmps: number): number {
-  if (breakerAmps <= 16) return 1.5;
-  if (breakerAmps <= 20) return 2.5;
-  if (breakerAmps <= 25) return 4.0;
-  if (breakerAmps <= 32) return 6.0;
-  if (breakerAmps <= 50) return 10.0;
+export function getRecommendedSection(breakerAmps: number): number {
+  if (breakerAmps <= 10) return 1.5; // C1 Alumbrado
+  if (breakerAmps <= 16) return 2.5; // C2 Tomas generales / C5
+  if (breakerAmps <= 20) return 4.0; // C4 Lavadora / Termo
+  if (breakerAmps <= 25) return 6.0; // C3 Cocina / Horno
+  if (breakerAmps <= 40) return 10.0; // Derivación individual / IGA
   return 16.0;
 }

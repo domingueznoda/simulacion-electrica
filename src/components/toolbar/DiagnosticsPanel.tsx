@@ -70,11 +70,11 @@ export const DiagnosticsPanel: React.FC = () => {
   };
 
   const getSectionMaxAmps = (section: number) => {
-    if (section >= 10) return 50;
-    if (section >= 6) return 36;
-    if (section >= 4) return 27;
-    if (section >= 2.5) return 21;
-    return 16;
+    if (section >= 10) return 40;
+    if (section >= 6) return 25;
+    if (section >= 4) return 20;
+    if (section >= 2.5) return 16;
+    return 10;
   };
 
   return (
@@ -349,23 +349,41 @@ export const DiagnosticsPanel: React.FC = () => {
 
                     <div>
                       <label className="text-[11px] text-slate-400 block mb-1">Sección de Cobre (mm²)</label>
-                      <select
-                        value={selectedEdge.data?.crossSectionMm2 || 1.5}
-                        onChange={(e) => {
-                          const sec = Number(e.target.value);
-                          updateEdgeData(selectedEdge.id, {
-                            crossSectionMm2: sec,
-                            maxAllowedCurrentAmps: getSectionMaxAmps(sec),
-                          });
-                        }}
-                        className="w-full bg-slate-800 text-xs text-white border border-slate-700 rounded-lg p-1.5 cursor-pointer"
-                      >
-                        <option value="1.5">1.5 mm² (Alumbrado - Máx 16A)</option>
-                        <option value="2.5">2.5 mm² (Tomas de Corriente - Máx 21A)</option>
-                        <option value="4.0">4.0 mm² (Lavadora / Termo - Máx 27A)</option>
-                        <option value="6.0">6.0 mm² (Cocina / Horno - Máx 36A)</option>
-                        <option value="10.0">10.0 mm² (Derivación Individual - Máx 50A)</option>
-                      </select>
+                      {(() => {
+                        const sourceNode = nodes.find((n) => n.id === selectedEdge.source);
+                        const targetNode = nodes.find((n) => n.id === selectedEdge.target);
+                        const isConnectedToSocket =
+                          (sourceNode?.data.type === 'load' && (sourceNode.data as LoadComponent).loadType === 'socket') ||
+                          (targetNode?.data.type === 'load' && (targetNode.data as LoadComponent).loadType === 'socket');
+
+                        return (
+                          <select
+                            value={selectedEdge.data?.crossSectionMm2 || 1.5}
+                            onChange={(e) => {
+                              const sec = Number(e.target.value);
+                              updateEdgeData(selectedEdge.id, {
+                                crossSectionMm2: sec,
+                                maxAllowedCurrentAmps: getSectionMaxAmps(sec),
+                              });
+                            }}
+                            className={`w-full bg-slate-800 text-xs text-white border rounded-lg p-1.5 cursor-pointer ${
+                              isConnectedToSocket && (selectedEdge.data?.crossSectionMm2 || 1.5) < 2.5
+                                ? 'border-rose-500 ring-2 ring-rose-500/40 text-rose-300 font-bold'
+                                : 'border-slate-700'
+                            }`}
+                          >
+                            <option value="1.5">
+                              {isConnectedToSocket
+                                ? '❌ 1.5 mm² (Antirreglamentario para tomas - Solo Alumbrado)'
+                                : '1.5 mm² (Alumbrado C1 - Máx 10A)'}
+                            </option>
+                            <option value="2.5">2.5 mm² (Tomas de Corriente C2/C5 - Mínimo REBT)</option>
+                            <option value="4.0">4.0 mm² (Lavadora / Termo C4 - Máx 20A)</option>
+                            <option value="6.0">6.0 mm² (Cocina / Horno C3 - Máx 25A)</option>
+                            <option value="10.0">10.0 mm² (Derivación Individual - Máx 40A)</option>
+                          </select>
+                        );
+                      })()}
                     </div>
 
                     <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-2 flex flex-col justify-center gap-1 text-[11px] font-mono">
@@ -389,6 +407,38 @@ export const DiagnosticsPanel: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Banner de Infracción de Sección para Tomas si procede */}
+                  {(() => {
+                    const edgeError = validationErrors.find(
+                      (err) => err.edgeIds.includes(selectedEdge.id) && err.code === 'UNDERSIZED_CABLE'
+                    );
+                    if (!edgeError) return null;
+
+                    return (
+                      <div className="mt-3 p-3 bg-rose-950/60 border border-rose-500/80 rounded-xl text-xs space-y-2">
+                        <div className="flex items-center gap-2 text-rose-300 font-bold">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>{edgeError.title}</span>
+                        </div>
+                        <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                          {edgeError.message}
+                        </p>
+                        <button
+                          onClick={() => {
+                            updateEdgeData(selectedEdge.id, {
+                              crossSectionMm2: 2.5,
+                              maxAllowedCurrentAmps: 16,
+                            });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold cursor-pointer transition active:scale-95 shadow-md shadow-rose-950/50"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Corregir a 2.5 mm² Reglamentario (REBT)</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : edges.length > 0 ? (
                 <div className="space-y-3">
@@ -404,9 +454,16 @@ export const DiagnosticsPanel: React.FC = () => {
                         key={sec}
                         onClick={() => {
                           for (const edge of edges) {
+                            const srcNode = nodes.find((n) => n.id === edge.source);
+                            const tgtNode = nodes.find((n) => n.id === edge.target);
+                            const isSocketEdge =
+                              (srcNode?.data.type === 'load' && (srcNode.data as LoadComponent).loadType === 'socket') ||
+                              (tgtNode?.data.type === 'load' && (tgtNode.data as LoadComponent).loadType === 'socket');
+                            const targetSection = (sec < 2.5 && isSocketEdge) ? 2.5 : sec;
+
                             updateEdgeData(edge.id, {
-                              crossSectionMm2: sec,
-                              maxAllowedCurrentAmps: getSectionMaxAmps(sec),
+                              crossSectionMm2: targetSection,
+                              maxAllowedCurrentAmps: getSectionMaxAmps(targetSection),
                             });
                           }
                         }}

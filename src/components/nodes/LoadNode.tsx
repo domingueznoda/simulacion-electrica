@@ -11,6 +11,10 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
   selected,
 }) => {
   const updateNodeData = useSchematicStore((s) => s.updateNodeData);
+  const edges = useSchematicStore((s) => s.edges);
+
+  const socketCables = edges.filter((e) => e.source === id || e.target === id);
+  const hasUndersizedCable = data.loadType === 'socket' && socketCables.some((e) => (e.data?.crossSectionMm2 || 1.5) < 2.5);
 
   useEffect(() => {
     if (data.loadType === 'buzzer') {
@@ -147,20 +151,29 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
         {renderVisualIcon()}
 
         {data.loadType === 'socket' && (
-          <div className="flex items-center justify-between text-[10px] px-2 py-1 bg-slate-950/60 rounded border border-slate-800">
-            <span className="text-slate-400">Protección Tierra:</span>
-            {data.hasGroundContact ? (
-              <span className="text-emerald-400 font-semibold flex items-center gap-1 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                PE Conectada (2P+T)
-              </span>
-            ) : (
-              <span className="text-amber-400/90 font-mono flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3 text-amber-400" />
-                Sin Tierra PE
-              </span>
+          <>
+            <div className="flex items-center justify-between text-[10px] px-2 py-1 bg-slate-950/60 rounded border border-slate-800">
+              <span className="text-slate-400">Protección Tierra:</span>
+              {data.hasGroundContact ? (
+                <span className="text-emerald-400 font-semibold flex items-center gap-1 font-mono">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  PE Conectada (2P+T)
+                </span>
+              ) : (
+                <span className="text-amber-400/90 font-mono flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                  Sin Tierra PE
+                </span>
+              )}
+            </div>
+
+            {hasUndersizedCable && (
+              <div className="flex items-center gap-1.5 p-1.5 bg-rose-950/70 border border-rose-600/80 rounded text-[10px] text-rose-300">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+                <span>Cable 1.5 mm² antirreglamentario (Solo alumbrado. Mín. 2.5 mm² según REBT)</span>
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {data.hasPhaseContact && !data.hasNeutralContact && !data.isOn && (

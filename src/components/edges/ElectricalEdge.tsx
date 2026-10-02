@@ -5,7 +5,7 @@ import {
   getSmoothStepPath,
   type EdgeProps,
 } from '@xyflow/react';
-import { Zap, X } from 'lucide-react';
+import { Zap, X, AlertTriangle } from 'lucide-react';
 import type { CableData } from '../../types/electrical';
 import { useSchematicStore } from '../../store/schematicStore';
 
@@ -30,6 +30,8 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
 }) => {
   const removeEdge = useSchematicStore((s) => s.removeEdge);
   const selectedEdgeId = useSchematicStore((s) => s.selectedEdgeId);
+  const setSelectedEdgeId = useSchematicStore((s) => s.setSelectedEdgeId);
+  const validationErrors = useSchematicStore((s) => s.validationErrors);
   const isSelected = selected || selectedEdgeId === id;
 
   const cable = (data as CableData) || {
@@ -40,6 +42,9 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
     isEnergized: false,
     isShortCircuited: false,
   };
+
+  const edgeError = validationErrors.find((err) => err.edgeIds.includes(id));
+  const isUndersized = edgeError?.code === 'UNDERSIZED_CABLE';
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
@@ -53,12 +58,20 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
 
   const wireColorCfg = WIRE_COLORS[cable.wireType] || WIRE_COLORS.phase;
   const isShort = cable.isShortCircuited;
-  const strokeColor = isShort ? '#ef4444' : isSelected ? '#fbbf24' : wireColorCfg.stroke;
-  const strokeWidth = (cable.crossSectionMm2 >= 4 ? 4 : cable.crossSectionMm2 >= 2.5 ? 3 : 2.5) + (isSelected ? 1.5 : 0);
+  const strokeColor = isShort
+    ? '#ef4444'
+    : isUndersized
+    ? '#f43f5e'
+    : isSelected
+    ? '#fbbf24'
+    : wireColorCfg.stroke;
+  const strokeWidth =
+    (cable.crossSectionMm2 >= 4 ? 4 : cable.crossSectionMm2 >= 2.5 ? 3 : 2.5) +
+    (isSelected || isUndersized ? 1.5 : 0);
 
   return (
     <>
-      {cable.hasCurrent && (
+      {(cable.hasCurrent || isUndersized) && (
         <path
           d={edgePath}
           fill="none"
@@ -66,7 +79,9 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
           strokeWidth={strokeWidth + 5}
           className="blur-xs"
           style={{
-            animation: 'electricalGlowAC 1.2s ease-in-out infinite',
+            animation: isUndersized
+              ? 'electricalGlowAC 0.8s ease-in-out infinite'
+              : 'electricalGlowAC 1.2s ease-in-out infinite',
           }}
         />
       )}
@@ -77,27 +92,49 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
         style={{
           stroke: strokeColor,
           strokeWidth,
-          strokeDasharray: cable.hasCurrent ? '8,5' : undefined,
+          strokeDasharray: isUndersized ? '6,4' : cable.hasCurrent ? '8,5' : undefined,
           animation: cable.hasCurrent ? 'electricalFlowAC 1.2s ease-in-out infinite' : undefined,
-          filter: isSelected ? 'drop-shadow(0 0 6px rgba(251, 191, 36, 0.9))' : undefined,
+          filter: isSelected
+            ? 'drop-shadow(0 0 6px rgba(251, 191, 36, 0.9))'
+            : isUndersized
+            ? 'drop-shadow(0 0 6px rgba(244, 63, 94, 0.8))'
+            : undefined,
         }}
       />
 
       <EdgeLabelRenderer>
         <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedEdgeId(id);
+          }}
           style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: 'all',
           }}
-          className={`group flex items-center gap-1 bg-slate-900/90 backdrop-blur-xs px-2 py-0.5 rounded-full border text-[10px] text-slate-300 font-mono shadow-md transition ${
-            isSelected ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-slate-700/80 hover:border-slate-500'
+          className={`group flex items-center gap-1 bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full border text-[10px] font-mono shadow-md transition cursor-pointer ${
+            isUndersized
+              ? 'border-rose-500 bg-rose-950/80 text-rose-300 ring-2 ring-rose-500/50 animate-pulse'
+              : isSelected
+              ? 'border-amber-400 ring-2 ring-amber-400/50 text-amber-200'
+              : 'border-slate-700/80 hover:border-slate-500 text-slate-300'
           }`}
+          title={
+            edgeError
+              ? `${edgeError.title}: ${edgeError.message}`
+              : `Conductor ${cable.wireType} - ${cable.crossSectionMm2} mm²`
+          }
         >
           {isShort ? (
             <span className="flex items-center gap-0.5 text-rose-400 font-bold animate-bounce">
               <Zap className="w-3 h-3 fill-rose-500" />
               CORTO
+            </span>
+          ) : isUndersized ? (
+            <span className="flex items-center gap-1 font-bold text-rose-300">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span>{cable.crossSectionMm2} mm² (¡Error REBT: Mín. 2.5 mm²!)</span>
             </span>
           ) : (
             <span className="flex items-center gap-1">
@@ -114,7 +151,7 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
               e.stopPropagation();
               removeEdge(id);
             }}
-            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-400 transition cursor-pointer p-0.5"
+            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-400 transition cursor-pointer p-0.5 ml-0.5"
             title="Eliminar conductor"
           >
             <X className="w-2.5 h-2.5" />
