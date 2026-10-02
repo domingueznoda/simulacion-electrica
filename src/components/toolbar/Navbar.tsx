@@ -29,7 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
           <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
             <Zap className="w-5 h-5 fill-amber-400" />
           </div>
-          <div>
+          <div className="hidden md:block">
             <div className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
               ElectroSimulador
             </div>
@@ -41,13 +41,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <div className="hidden md:flex items-center gap-2">
-          <label htmlFor="preset-select" className="text-xs text-slate-400 font-medium">Circuito:</label>
+        <div className="flex items-center gap-2">
           <select
             id="preset-select"
             value={activePreset}
             onChange={(e) => loadPreset(e.target.value)}
-            className="bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer"
+            className="bg-slate-800 w-30 md:w-auto text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer"
           >
             {Object.values(PRESET_CIRCUITS).map((p) => (
               <option key={p.id} value={p.id}>
@@ -59,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
 
         <button
           onClick={() => loadPreset(activePreset)}
-          className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition cursor-pointer active:scale-95"
+          className="p-1 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition cursor-pointer active:scale-95"
           title="Restablecer circuito"
         >
           <RotateCw className="w-3.5 h-3.5" />
@@ -73,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
             }
             setIsAudioMuted(nextMuted);
           }}
-          className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer active:scale-95 ${
+          className={`p-1 rounded-lg transition cursor-pointer active:scale-95 ${
             isAudioMuted
               ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
               : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800'
@@ -85,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
 
         <button
           onClick={clearCanvas}
-          className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer active:scale-95"
+          className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition cursor-pointer active:scale-95"
           title="Limpiar lienzo"
         >
           <Trash2 className="w-4 h-4" />
@@ -93,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenHelp }) => {
 
         <button
           onClick={onOpenHelp}
-          className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer active:scale-95"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer active:scale-95"
           title="Ayuda y simbología"
         >
           <HelpCircle className="w-4 h-4" />

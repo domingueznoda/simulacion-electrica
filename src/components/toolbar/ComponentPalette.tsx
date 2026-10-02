@@ -228,38 +228,6 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
           </button>
         </div>
 
-        <div className="md:hidden p-3 border-b border-slate-800 bg-slate-950/40 shrink-0">
-          <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1.5">
-            Cargar Circuito Preconfigurado
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={activePreset}
-              onChange={(e) => {
-                loadPreset(e.target.value);
-                onClose();
-              }}
-              className="flex-1 bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-lg px-2.5 py-2 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer"
-            >
-              {Object.values(PRESET_CIRCUITS).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                loadPreset(activePreset);
-                onClose();
-              }}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer"
-              title="Restablecer circuito"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
         <div className="p-2.5 border-b border-slate-800 bg-slate-900/60 shrink-0 space-y-2">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
