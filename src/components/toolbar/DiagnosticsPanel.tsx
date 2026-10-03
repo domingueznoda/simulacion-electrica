@@ -70,6 +70,8 @@ export const DiagnosticsPanel: React.FC = () => {
   };
 
   const getSectionMaxAmps = (section: number) => {
+    if (section >= 25) return 80;
+    if (section >= 16) return 63;
     if (section >= 10) return 40;
     if (section >= 6) return 25;
     if (section >= 4) return 20;
@@ -375,12 +377,14 @@ export const DiagnosticsPanel: React.FC = () => {
                             <option value="1.5">
                               {isConnectedToSocket
                                 ? '❌ 1.5 mm² (Antirreglamentario para tomas - Solo Alumbrado)'
-                                : '1.5 mm² (Alumbrado C1 - Máx 10A)'}
+                                : '1.5 mm² (Alumbrado C1 - Máx 10A / 15A Iz)'}
                             </option>
-                            <option value="2.5">2.5 mm² (Tomas de Corriente C2/C5 - Mínimo REBT)</option>
-                            <option value="4.0">4.0 mm² (Lavadora / Termo C4 - Máx 20A)</option>
-                            <option value="6.0">6.0 mm² (Cocina / Horno C3 - Máx 25A)</option>
-                            <option value="10.0">10.0 mm² (Derivación Individual - Máx 40A)</option>
+                            <option value="2.5">2.5 mm² (Tomas de Corriente C2/C5 - Mínimo REBT - Máx 16A / 21A Iz)</option>
+                            <option value="4.0">4.0 mm² (Lavadora / Termo C4 - Máx 20A / 28A Iz)</option>
+                            <option value="6.0">6.0 mm² (Cocina / Horno C3 - Máx 25A / 36A Iz)</option>
+                            <option value="10.0">10.0 mm² (Derivación Individual - Máx 40A / 50A Iz)</option>
+                            <option value="16.0">16.0 mm² (Alta Potencia / IGA - Máx 63A / 66A Iz)</option>
+                            <option value="25.0">25.0 mm² (Acometida / LGA - Máx 80A / 89A Iz)</option>
                           </select>
                         );
                       })()}
@@ -396,7 +400,11 @@ export const DiagnosticsPanel: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-slate-400">Intensidad:</span>
                         <span className={selectedEdge.data?.hasCurrent ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
-                          {selectedEdge.data?.hasCurrent ? 'Activa' : '0.0 A'}
+                          {selectedEdge.data?.hasCurrent
+                            ? selectedEdge.data.measuredCurrentAmps
+                              ? `${selectedEdge.data.measuredCurrentAmps.toFixed(2)} A`
+                              : 'Activa'
+                            : '0.00 A'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -408,12 +416,48 @@ export const DiagnosticsPanel: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Banner de Infracción de Sección para Tomas si procede */}
+                  {/* Banner de Infracción de Sección si procede */}
                   {(() => {
                     const edgeError = validationErrors.find(
                       (err) => err.edgeIds.includes(selectedEdge.id) && err.code === 'UNDERSIZED_CABLE'
                     );
                     if (!edgeError) return null;
+
+                    const targetFixSection = (() => {
+                      const measured = selectedEdge.data?.measuredCurrentAmps || 0;
+                      if (measured > 66) return 25.0;
+                      if (measured > 50) return 16.0;
+                      if (measured > 36) return 10.0;
+                      if (measured > 28) return 6.0;
+                      if (measured > 21) return 4.0;
+                      if (measured > 0) return 2.5;
+
+                      const src = nodes.find((n) => n.id === selectedEdge.source);
+                      const tgt = nodes.find((n) => n.id === selectedEdge.target);
+                      const loadNode = src?.data.type === 'load' ? src : tgt?.data.type === 'load' ? tgt : null;
+                      if (loadNode) {
+                        const l = loadNode.data as LoadComponent;
+                        const dAmps = l.ratedPowerWatts / 230;
+                        if (dAmps > 66) return 25.0;
+                        if (dAmps > 50) return 16.0;
+                        if (dAmps > 36) return 10.0;
+                        if (dAmps > 28) return 6.0;
+                        if (dAmps > 21) return 4.0;
+                        if (l.loadType === 'socket') return 2.5;
+                      }
+
+                      const brkNode = src?.data.type === 'breaker' ? src : tgt?.data.type === 'breaker' ? tgt : null;
+                      if (brkNode) {
+                        const b = brkNode.data as BreakerComponent;
+                        if (b.ratedCurrent > 40) return 16.0;
+                        if (b.ratedCurrent > 25) return 10.0;
+                        if (b.ratedCurrent > 20) return 6.0;
+                        if (b.ratedCurrent > 16) return 4.0;
+                        if (b.ratedCurrent > 10) return 2.5;
+                      }
+
+                      return 2.5;
+                    })();
 
                     return (
                       <div className="mt-3 p-3 bg-rose-950/60 border border-rose-500/80 rounded-xl text-xs space-y-2">
@@ -427,14 +471,14 @@ export const DiagnosticsPanel: React.FC = () => {
                         <button
                           onClick={() => {
                             updateEdgeData(selectedEdge.id, {
-                              crossSectionMm2: 2.5,
-                              maxAllowedCurrentAmps: 16,
+                              crossSectionMm2: targetFixSection,
+                              maxAllowedCurrentAmps: getSectionMaxAmps(targetFixSection),
                             });
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold cursor-pointer transition active:scale-95 shadow-md shadow-rose-950/50"
                         >
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Corregir a 2.5 mm² Reglamentario (REBT)</span>
+                          <span>Corregir a {targetFixSection} mm² Reglamentario (REBT)</span>
                         </button>
                       </div>
                     );
@@ -448,8 +492,8 @@ export const DiagnosticsPanel: React.FC = () => {
                   <div className="text-[11px] text-slate-400">
                     Haz clic directamente en un cable o en un componente del esquema para editar sus parámetros individuales o eliminarlo.
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[1.5, 2.5, 4.0, 6.0].map((sec) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {[1.5, 2.5, 4.0, 6.0, 10.0, 16.0].map((sec) => (
                       <button
                         key={sec}
                         onClick={() => {
@@ -471,7 +515,17 @@ export const DiagnosticsPanel: React.FC = () => {
                       >
                         <div className="font-bold text-amber-400">{sec} mm²</div>
                         <div className="text-[10px] text-slate-400">
-                          {sec === 1.5 ? '16A - Alumbrado' : sec === 2.5 ? '21A - Tomas' : sec === 4.0 ? '27A - Especiales' : '36A - Potencia'}
+                          {sec === 1.5
+                            ? '15A Iz (C1 Luz)'
+                            : sec === 2.5
+                            ? '21A Iz (C2 Tomas)'
+                            : sec === 4.0
+                            ? '28A Iz (C4)'
+                            : sec === 6.0
+                            ? '36A Iz (C3)'
+                            : sec === 10.0
+                            ? '50A Iz (IGA)'
+                            : '66A Iz (Potencia)'}
                         </div>
                       </button>
                     ))}

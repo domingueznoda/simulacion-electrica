@@ -134,7 +134,12 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
           ) : isUndersized ? (
             <span className="flex items-center gap-1 font-bold text-rose-300">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-              <span>{cable.crossSectionMm2} mm² (¡Error REBT: Mín. 2.5 mm²!)</span>
+              <span>
+                {cable.crossSectionMm2} mm² (¡Sección Insuficiente REBT!)
+                {cable.measuredCurrentAmps && cable.measuredCurrentAmps > 0
+                  ? ` [${cable.measuredCurrentAmps.toFixed(1)}A]`
+                  : ''}
+              </span>
             </span>
           ) : (
             <span className="flex items-center gap-1">
@@ -143,6 +148,11 @@ export const ElectricalEdge: React.FC<EdgeProps> = ({
                 style={{ backgroundColor: strokeColor }}
               />
               <span>{cable.crossSectionMm2} mm²</span>
+              {cable.hasCurrent && cable.measuredCurrentAmps && cable.measuredCurrentAmps > 0 ? (
+                <span className="text-[9px] text-emerald-400 font-mono font-bold">
+                  ({cable.measuredCurrentAmps.toFixed(1)}A)
+                </span>
+              ) : null}
             </span>
           )}
 

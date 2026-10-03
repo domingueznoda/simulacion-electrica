@@ -12,9 +12,12 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
 }) => {
   const updateNodeData = useSchematicStore((s) => s.updateNodeData);
   const edges = useSchematicStore((s) => s.edges);
+  const validationErrors = useSchematicStore((s) => s.validationErrors);
 
   const socketCables = edges.filter((e) => e.source === id || e.target === id);
   const hasUndersizedCable = data.loadType === 'socket' && socketCables.some((e) => (e.data?.crossSectionMm2 || 1.5) < 2.5);
+  const missingProtectionErr = validationErrors.find((e) => e.code === 'MISSING_PROTECTION' && e.nodeIds.includes(id));
+  const undersizedCableErr = validationErrors.find((e) => e.code === 'UNDERSIZED_CABLE' && e.nodeIds.includes(id));
 
   useEffect(() => {
     if (data.loadType === 'buzzer') {
@@ -174,6 +177,20 @@ export const LoadNode: React.FC<{ id: string; data: LoadComponent; selected: boo
               </div>
             )}
           </>
+        )}
+
+        {missingProtectionErr && (
+          <div className="flex items-center gap-1.5 p-1.5 bg-rose-950/80 border border-rose-600 rounded text-[10px] text-rose-300 font-medium">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-400 animate-pulse" />
+            <span>¡Circuito sin protección magnetotérmica (REBT ITC-BT-22)!</span>
+          </div>
+        )}
+
+        {undersizedCableErr && data.loadType !== 'socket' && (
+          <div className="flex items-center gap-1.5 p-1.5 bg-rose-950/80 border border-rose-600 rounded text-[10px] text-rose-300 font-medium">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+            <span>¡Sobrecarga de cable para {data.ratedPowerWatts}W ({(data.ratedPowerWatts / 230).toFixed(1)}A)!</span>
+          </div>
         )}
 
         {data.hasPhaseContact && !data.hasNeutralContact && !data.isOn && (

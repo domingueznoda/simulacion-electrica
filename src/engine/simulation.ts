@@ -453,10 +453,18 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     { branch: LoadBranch; pathLength: number; voltage: number; current: number }
   >();
   const participatingNetIds = new Set<number>();
+  const edgeCurrents = new Map<string, number>();
 
   for (const path of finalEval.validPaths) {
     for (const netId of path.nets) {
       participatingNetIds.add(netId);
+      const net = finalEval.nets.find((n) => n.id === netId);
+      if (net) {
+        for (const eId of net.edgeIds) {
+          const prevI = edgeCurrents.get(eId) || 0;
+          edgeCurrents.set(eId, Number((prevI + path.current).toFixed(2)));
+        }
+      }
     }
 
     for (const b of path.branches) {
@@ -547,6 +555,7 @@ export function simulateElectricalCircuit(nodes: AppNode[], edges: AppEdge[]): S
     activeLoadIds,
     energizedEdgeIds,
     activeEdgeIds,
+    edgeCurrents,
     shortCircuitEdgeIds: finalEval.shortCircuitEdgeIds,
     hasShortCircuit: false,
     trippedBreakerIds,

@@ -113,6 +113,7 @@ export interface CableData extends Record<string, unknown> {
   hasCurrent: boolean;
   isEnergized: boolean;
   isShortCircuited: boolean;
+  measuredCurrentAmps?: number;
 }
 
 export type AppNode = Node<AnyElectricalComponent>;
@@ -147,6 +148,7 @@ export interface SimulationResult {
   activeLoadIds: Set<string>;
   energizedEdgeIds: Set<string>;
   activeEdgeIds: Set<string>;
+  edgeCurrents?: Map<string, number>;
   shortCircuitEdgeIds: Set<string>;
   hasShortCircuit: boolean;
   trippedBreakerIds: Set<string>;

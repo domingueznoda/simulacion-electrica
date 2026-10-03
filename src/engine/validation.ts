@@ -10,23 +10,107 @@ import type {
   ValidationError,
 } from '../types/electrical';
 
-const MAX_AMPACITY_BY_SECTION: Record<number, number> = {
-  1.5: 10, // ITC-BT-25 (C1 Alumbrado): Calibre máximo admisible de PIA 10A
-  2.5: 16, // ITC-BT-25 (C2 Tomas / C5): Calibre máximo admisible de PIA 16A
-  4.0: 20, // ITC-BT-25 (C4 Lavadora/Termo): Calibre máximo admisible de PIA 20A
-  6.0: 25, // ITC-BT-25 (C3 Cocina/Horno): Calibre máximo admisible de PIA 25A
-  10.0: 40, // Derivación individual / IGA: Calibre máximo admisible de PIA 40A
-  16.0: 63,
+export const REBT_MAX_AMPACITY: Record<number, number> = {
+  1.5: 15, // ITC-BT-19 Tabla 1: 15A en servicio continuo para cobre en tubo (PIA máx 10A)
+  2.5: 21, // ITC-BT-19 Tabla 1: 21A en servicio continuo (PIA máx 16A)
+  4.0: 28, // ITC-BT-19 Tabla 1: 28A en servicio continuo (PIA máx 20A)
+  6.0: 36, // ITC-BT-19 Tabla 1: 36A en servicio continuo (PIA máx 25A)
+  10.0: 50, // ITC-BT-19 Tabla 1: 50A en servicio continuo (PIA máx 40A)
+  16.0: 66, // ITC-BT-19 Tabla 1: 66A en servicio continuo (PIA máx 63A)
+  25.0: 89, // ITC-BT-19 Tabla 1: 89A en servicio continuo (PIA máx 80A)
 };
 
+const MAX_AMPACITY_BY_SECTION: Record<number, number> = REBT_MAX_AMPACITY;
+
 const MAX_BREAKER_BY_SECTION: Record<number, number> = {
-  1.5: 10,
-  2.5: 16,
-  4.0: 20,
-  6.0: 25,
-  10.0: 40,
+  1.5: 10, // REBT ITC-BT-25: Calibre máx PIA para 1.5 mm²
+  2.5: 16, // REBT ITC-BT-25: Calibre máx PIA para 2.5 mm²
+  4.0: 20, // REBT ITC-BT-25: Calibre máx PIA para 4.0 mm²
+  6.0: 25, // REBT ITC-BT-25: Calibre máx PIA para 6.0 mm²
+  10.0: 40, // REBT ITC-BT-25 / IGA: Calibre máx PIA para 10.0 mm²
   16.0: 63,
+  25.0: 80,
 };
+
+export function getRequiredSectionForCurrent(currentAmps: number): number {
+  if (currentAmps <= 15) return 1.5;
+  if (currentAmps <= 21) return 2.5;
+  if (currentAmps <= 28) return 4.0;
+  if (currentAmps <= 36) return 6.0;
+  if (currentAmps <= 50) return 10.0;
+  if (currentAmps <= 66) return 16.0;
+  return 25.0;
+}
+
+export function getRecommendedBreakerForCurrent(currentAmps: number): number {
+  if (currentAmps <= 10) return 10;
+  if (currentAmps <= 16) return 16;
+  if (currentAmps <= 20) return 20;
+  if (currentAmps <= 25) return 25;
+  if (currentAmps <= 32) return 32;
+  if (currentAmps <= 40) return 40;
+  return 63;
+}
+
+function checkLoadProtection(
+  loadNode: AppNode,
+  nodes: AppNode[],
+  edges: AppEdge[]
+): {
+  isProtected: boolean;
+  connectedToSource: boolean;
+  protectingBreakers: BreakerComponent[];
+} {
+  const nodeMap = new Map<string, AppNode>(nodes.map((n) => [n.id, n]));
+  const visited = new Set<string>();
+  const queue: Array<{ nodeId: string; passedBreakers: BreakerComponent[] }> = [
+    { nodeId: loadNode.id, passedBreakers: [] },
+  ];
+  visited.add(loadNode.id);
+
+  let reachesSource = false;
+  let hasPathWithoutBreaker = false;
+  const allFoundBreakers: BreakerComponent[] = [];
+
+  while (queue.length > 0) {
+    const item = queue.shift()!;
+    const currentNode = nodeMap.get(item.nodeId);
+    if (!currentNode) continue;
+
+    if (currentNode.data.type === 'source') {
+      reachesSource = true;
+      if (item.passedBreakers.length === 0) {
+        hasPathWithoutBreaker = true;
+      }
+    }
+
+    const connectedEdges = edges.filter(
+      (e) => e.source === item.nodeId || e.target === item.nodeId
+    );
+    for (const edge of connectedEdges) {
+      const neighborId = edge.source === item.nodeId ? edge.target : edge.source;
+      if (!visited.has(neighborId)) {
+        visited.add(neighborId);
+        const neighborNode = nodeMap.get(neighborId);
+        const nextBreakers = [...item.passedBreakers];
+        if (neighborNode && neighborNode.data.type === 'breaker') {
+          const brk = neighborNode.data as BreakerComponent;
+          nextBreakers.push(brk);
+          if (!allFoundBreakers.some((b) => b.id === brk.id)) {
+            allFoundBreakers.push(brk);
+          }
+        }
+        queue.push({ nodeId: neighborId, passedBreakers: nextBreakers });
+      }
+    }
+  }
+
+  return {
+    isProtected: reachesSource && !hasPathWithoutBreaker && allFoundBreakers.length > 0,
+    connectedToSource: reachesSource,
+    protectingBreakers: allFoundBreakers,
+  };
+}
 
 export function validateElectricalSchematic(
   nodes: AppNode[],
@@ -110,6 +194,23 @@ export function validateElectricalSchematic(
     const cable = edge.data as CableData;
     if (!cable) continue;
 
+    const measuredCurrent = simulationResult?.edgeCurrents?.get(edge.id) ?? cable.measuredCurrentAmps ?? 0;
+    const maxIz = REBT_MAX_AMPACITY[cable.crossSectionMm2] || (cable.crossSectionMm2 * 10);
+
+    if (measuredCurrent > maxIz) {
+      const reqSec = getRequiredSectionForCurrent(measuredCurrent);
+      errors.push({
+        id: `val-cable-overcurrent-${edge.id}`,
+        code: 'UNDERSIZED_CABLE',
+        severity: measuredCurrent > maxIz * 1.3 ? 'critical' : 'error',
+        title: `Sobrecarga inadmisible en conductor (${cable.crossSectionMm2} mm² - ${measuredCurrent.toFixed(1)}A)`,
+        message: `Circulan ${measuredCurrent.toFixed(1)}A por este cable de ${cable.crossSectionMm2} mm². La intensidad máxima admisible (Iz) según REBT ITC-BT-19 para ${cable.crossSectionMm2} mm² es de ${maxIz}A (sobrecarga del ${Math.round(((measuredCurrent - maxIz) / maxIz) * 100)}%). El conductor corre grave riesgo de destrucción térmica del aislamiento e incendio.`,
+        nodeIds: [edge.source, edge.target],
+        edgeIds: [edge.id],
+        suggestedFix: `Aumenta la sección del conductor a mínimo ${reqSec} mm² e instala una protección acorde (PIA ≤ ${MAX_BREAKER_BY_SECTION[cable.crossSectionMm2] || 10}A).`,
+      });
+    }
+
     const isGroundSource = edge.sourceHandle?.includes('pe') || edge.targetHandle?.includes('pe');
     const isPhaseOrNeutralTarget =
       edge.sourceHandle?.includes('term-src-l') ||
@@ -177,6 +278,62 @@ export function validateElectricalSchematic(
         edgeIds: [],
         suggestedFix: 'Conecta la Fase (L) a través de los interruptores o directamente a la protección.',
       });
+    }
+
+    const demandAmps = Number((load.ratedPowerWatts / 230).toFixed(1));
+    const reqSectionForLoad = getRequiredSectionForCurrent(demandAmps);
+    const recBreakerForLoad = getRecommendedBreakerForCurrent(demandAmps);
+    const protectionInfo = checkLoadProtection(lNode, nodes, edges);
+
+    // 1. Verificación obligatoria de protección magnetotérmica (REBT ITC-BT-22 e ITC-BT-25)
+    if (protectionInfo.connectedToSource && !protectionInfo.isProtected) {
+      errors.push({
+        id: `val-load-unprotected-${lNode.id}`,
+        code: 'MISSING_PROTECTION',
+        severity: load.ratedPowerWatts >= 1500 ? 'critical' : 'error',
+        title: `Circuito desprotegido sin magnetotérmico (${load.name})`,
+        message: `La carga ${load.name} (${load.ratedPowerWatts}W, demanda ${demandAmps}A a 230V) está alimentada desde la fuente sin dispositivo de corte y protección contra sobreintensidades (PIA/IGA/Fusible). Según REBT ITC-BT-22 e ITC-BT-25, todo circuito interior receptor debe disponer obligatoriamente de protección magnetotérmica omnipolar para prevenir incendios y sobrecargas.`,
+        nodeIds: [lNode.id],
+        edgeIds: lEdges.map((e) => e.id),
+        suggestedFix: `Intercala un magnetotérmico (PIA) con calibre de ${recBreakerForLoad}A y cableado de sección mínima ${reqSectionForLoad} mm² entre la fuente y la carga.`,
+      });
+    }
+
+    // 2. Verificación de adecuación calibre magnetotérmico vs demanda de la carga (REBT ITC-BT-22: Ib <= In)
+    if (protectionInfo.protectingBreakers.length > 0) {
+      for (const brk of protectionInfo.protectingBreakers) {
+        if (brk.breakerType === 'circuit_breaker' && demandAmps > brk.ratedCurrent) {
+          errors.push({
+            id: `val-breaker-overload-${brk.id}-${lNode.id}`,
+            code: 'BREAKER_TRIPPED',
+            severity: 'warning',
+            title: `Calibre de protección insuficiente para la carga (${brk.name})`,
+            message: `La carga ${load.name} demanda ${demandAmps}A (${load.ratedPowerWatts}W a 230V), superando el calibre de disparo del magnetotérmico ${brk.name} (${brk.ratedCurrent}A). El interruptor disparará por sobrecarga térmica. REBT ITC-BT-22 exige Ib ≤ In.`,
+            nodeIds: [brk.id, lNode.id],
+            edgeIds: [],
+            suggestedFix: `Aumenta el calibre del magnetotérmico a ≥ ${recBreakerForLoad}A y la sección de los conductores a ≥ ${reqSectionForLoad} mm².`,
+          });
+        }
+      }
+    }
+
+    // 3. Verificación de sección de los conductores conectados a la carga respecto a la potencia demandada (REBT ITC-BT-19)
+    for (const edge of lEdges) {
+      const cable = edge.data as CableData;
+      if (!cable) continue;
+      const maxIz = REBT_MAX_AMPACITY[cable.crossSectionMm2] || (cable.crossSectionMm2 * 10);
+      if (demandAmps > maxIz) {
+        errors.push({
+          id: `val-load-cable-undersized-${edge.id}-${lNode.id}`,
+          code: 'UNDERSIZED_CABLE',
+          severity: demandAmps > maxIz * 1.3 ? 'critical' : 'error',
+          title: `Sección de conductor insuficiente para ${load.ratedPowerWatts}W (${load.name})`,
+          message: `La carga ${load.name} (${load.ratedPowerWatts}W) demanda ${demandAmps}A a 230V. El cable conectado tiene una sección de ${cable.crossSectionMm2} mm² (intensidad máxima admisible Iz = ${maxIz}A según REBT ITC-BT-19 Tabla 1). El conductor sufrirá sobrecalentamiento crítico e ignición por efecto Joule. Se requiere una sección mínima de ${reqSectionForLoad} mm².`,
+          nodeIds: [lNode.id],
+          edgeIds: [edge.id],
+          suggestedFix: `Aumenta la sección del conductor a mínimo ${reqSectionForLoad} mm² en las propiedades del cable.`,
+        });
+      }
     }
 
     if (load.loadType === 'socket') {

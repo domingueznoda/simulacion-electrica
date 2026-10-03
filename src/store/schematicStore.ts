@@ -146,6 +146,7 @@ function evaluateGraphState(nodes: AppNode[], edges: AppEdge[]) {
     const isEnergized = simResult.energizedEdgeIds.has(edge.id);
     const hasCurrent = simResult.activeEdgeIds.has(edge.id);
     const isShortCircuited = simResult.shortCircuitEdgeIds.has(edge.id);
+    const measuredCurrentAmps = simResult.edgeCurrents?.get(edge.id) || 0;
 
     return {
       ...edge,
@@ -154,6 +155,7 @@ function evaluateGraphState(nodes: AppNode[], edges: AppEdge[]) {
         isEnergized,
         hasCurrent,
         isShortCircuited,
+        measuredCurrentAmps,
       } as CableData,
     };
   });
