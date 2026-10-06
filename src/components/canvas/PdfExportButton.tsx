@@ -84,7 +84,7 @@ export const PdfExportButton: React.FC = () => {
               type="button"
               onClick={() => handleExport('unifilar')}
               disabled={downloadingType !== null}
-              className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-800 text-left transition cursor-pointer group"
+              className="w-full hidden flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-800/90 active:bg-slate-800 text-left transition cursor-pointer group"
             >
               <div className="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/60 flex items-center justify-center shrink-0 group-hover:border-sky-500 transition">
                 {downloadingType === 'unifilar' ? (
